@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package>
+  <name>robot_model</name>
+  <version>0.0.0</version>
+  <description>A fixed version of lwpr with catkin support</description>
+
+  <maintainer email="g.passault@gmail.com">Grégoire Passault</maintainer>
+  <author email="g.passault@gmail.com">Grégoire Passault</author>
+
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>rbdl_urdfreader</build_depend> <!-- rhobandeps/rbdl -->
+
+  <run_depend>rbdl_urdfreader</run_depend>
+
+  <export>
+  </export>
+</package>
