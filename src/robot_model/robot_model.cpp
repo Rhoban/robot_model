@@ -132,9 +132,9 @@ Eigen::Matrix3d RobotModel::orientation(const std::string& srcFrame, const std::
   update();
 
   RigidBodyDynamics::Math::Matrix3d transform1;
-  transform1 = RigidBodyDynamics::CalcBodyWorldOrientation(model, dofs, getBodyId(srcFrame), false);
+  transform1 = RigidBodyDynamics::CalcBodyWorldOrientation(model, dofs, getBodyId(dstFrame), false);
   RigidBodyDynamics::Math::Matrix3d transform2;
-  transform2 = RigidBodyDynamics::CalcBodyWorldOrientation(model, dofs, getBodyId(dstFrame), false);
+  transform2 = RigidBodyDynamics::CalcBodyWorldOrientation(model, dofs, getBodyId(srcFrame), false);
 
   return transform1 * transform2.transpose();
 }
@@ -148,7 +148,7 @@ double RobotModel::orientationYaw(const std::string& srcFrame, const std::string
 
 Eigen::Affine3d RobotModel::transformation(const std::string& srcFrame, const std::string& dstFrame)
 {
-  Eigen::Affine3d rotation(orientation(dstFrame, srcFrame));
+  Eigen::Affine3d rotation(orientation(srcFrame, dstFrame));
   Eigen::Translation3d translation(-position(dstFrame, srcFrame));
 
   return rotation * translation;
