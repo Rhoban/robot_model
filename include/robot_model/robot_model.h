@@ -29,12 +29,12 @@ public:
   unsigned int getJointId(const std::string &name);
 
   // Gets the position transformation from frame "src" to frame "dest"
-  Eigen::Vector3d position(const std::string &srcFrame, const std::string &dstFrame,
+  virtual Eigen::Vector3d position(const std::string &srcFrame, const std::string &dstFrame,
                            const Eigen::Vector3d& point = Eigen::Vector3d::Zero());
   Eigen::Vector3d jointPosition(const std::string &jointName, const std::string &frame);
 
   // Gets the orientation of frame src in frame dst
-  Eigen::Matrix3d orientation(const std::string& srcFrame, const std::string& dstFrame);
+  virtual Eigen::Matrix3d orientation(const std::string& srcFrame, const std::string& dstFrame);
   double orientationYaw(const std::string& srcFrame, const std::string& dstFrame);
 
   // Gets the transformation from frame src to frame dst

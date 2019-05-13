@@ -29,9 +29,9 @@ void eigenToProtobuf(Eigen::Affine3d pose, HumanoidModelPose* msgPose)
 namespace rhoban
 {
 HumanoidModel::HumanoidModel(std::string filename)
-  : RobotModel(filename), context(1), socket(context, ZMQ_PUB), serverStarted(false)
+  : RobotModel(filename), context(1), socket(context, ZMQ_PUB), serverStarted(false), isLeftSupport(false)
 {
-  worldToRobot = Eigen::Affine3d::Identity();
+  worldToSupport = Eigen::Affine3d::Identity();
 
   // Degrees of freedom
   dofs = { "head_yaw",        "head_pitch",           "left_shoulder_pitch", "left_shoulder_roll",
@@ -64,6 +64,27 @@ HumanoidModel::HumanoidModel(std::string filename)
     // Note: this will raise an exception if the frame is not found
     getBodyId(frame);
   }
+
+  setSupportFoot(false);
+}
+
+void HumanoidModel::setSupportFoot(bool left)
+{
+  // Initializing aliases
+  isLeftSupport = left;
+
+  if (left) {
+    bodyAliases["support_foot"] = "left_foot";
+    bodyAliases["flying_foot"] = "right_foot";
+  } else {
+    bodyAliases["support_foot"] = "right_foot";
+    bodyAliases["flying_foot"] = "left_foot";
+  }
+}
+
+Eigen::Affine3d HumanoidModel::frameToWorld(const std::string& frame)
+{
+  return worldToSupport.inverse() * transformation(frame, "support_foot");
 }
 
 void HumanoidModel::startServer()
@@ -90,15 +111,13 @@ void HumanoidModel::publishModel()
     msg.add_dofs(getDof(dof));
   }
 
-  auto robotToWorld = worldToRobot.inverse();
-
   // Adding robot Pose
-  eigenToProtobuf(robotToWorld, msg.mutable_robottoworld());
+  eigenToProtobuf(frameToWorld("origin"), msg.mutable_robottoworld());
 
   // Debugging frame positions
-  eigenToProtobuf(robotToWorld * transformation("trunk", "origin"), msg.add_debugpositions());
-  eigenToProtobuf(robotToWorld * transformation("left_foot", "origin"), msg.add_debugpositions());
-  eigenToProtobuf(robotToWorld * transformation("right_foot", "origin"), msg.add_debugpositions());
+  // eigenToProtobuf(robotToWorld * transformation("trunk", "origin"), msg.add_debugpositions());
+  // eigenToProtobuf(robotToWorld * transformation("left_foot", "origin"), msg.add_debugpositions());
+  // eigenToProtobuf(robotToWorld * transformation("right_foot", "origin"), msg.add_debugpositions());
 
   // Sending it through PUB/SUB
   zmq::message_t packet(msg.ByteSize());

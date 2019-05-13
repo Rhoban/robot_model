@@ -16,8 +16,16 @@ public:
   void startServer();
   void publishModel();
 
-  Eigen::Affine3d worldToRobot;
+  void setSupportFoot(bool left);
 
+  // Getting given frame to world
+  Eigen::Affine3d frameToWorld(const std::string &frame);
+
+  // World to support foot
+  bool isLeftSupport;
+  Eigen::Affine3d worldToSupport;
+
+  // Name of expected DOFs and frames in robot
   std::vector<std::string> dofs;
   std::vector<std::string> frames;
 
