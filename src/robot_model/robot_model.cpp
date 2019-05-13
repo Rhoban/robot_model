@@ -14,16 +14,6 @@ RobotModel::RobotModel(std::string filename)
     throw std::runtime_error("RobotModel: unable to load URDF file: " + filename);
   }
 
-  // for (int k = 0; k < model.mBodies.size(); k++)
-  // {
-  //   std::cout << model.GetBodyName(k) << std::endl;
-  //   std::cout << model.mBodies[k].mMass << std::endl;
-  //   if (k > 0) {
-  //     std::cout << "#" << k << " Joint is: " << jointNames[k-1] << std::endl;
-  //   }
-  // }
-  // std::cout << jointNames.size() << " joints" << std::endl;
-
   for (int k = 0; k < jointNames.size(); k++)
   {
     dofToId[jointNames[k]] = k;
@@ -31,9 +21,11 @@ RobotModel::RobotModel(std::string filename)
 
   // Initializing dofs vectors with zeros
   resetDofs();
+
+  bodyAliases["origin"] = "ROOT";
 }
 
-bool RobotModel::hasDof(std::string name)
+bool RobotModel::hasDof(const std::string &name)
 {
   return dofToId.count(name);
 }
@@ -54,25 +46,38 @@ void RobotModel::resetDofs()
   dofs = RigidBodyDynamics::Math::VectorNd::Zero(model.dof_count);
 }
 
-unsigned int RobotModel::getJointId(std::string name)
+unsigned int RobotModel::getJointId(const std::string &name)
 {
-  if (dofToId.count(name)) {
+  if (dofToId.count(name))
+  {
     return dofToId[name];
-  } else {
+  }
+  else
+  {
     std::ostringstream oss;
     oss << "RobotModel: Can't find joint with name \"" << name << "\"";
-    
+
     throw std::runtime_error(oss.str());
   }
 }
 
-void RobotModel::setDof(std::string name, double value)
+void RobotModel::setDof(const std::string &name, double value)
 {
   dofs[getJointId(name)] = value;
 }
 
-unsigned int RobotModel::getBodyId(std::string name)
+double RobotModel::getDof(const std::string &name)
 {
+  return dofs[getJointId(name)];
+}
+
+unsigned int RobotModel::getBodyId(const std::string &name)
+{
+  if (bodyAliases.count(name))
+  {
+    return getBodyId(bodyAliases[name]);
+  }
+
   unsigned int id = model.GetBodyId(name.c_str());
 
   if (id == std::numeric_limits<unsigned int>::max())
@@ -86,7 +91,7 @@ unsigned int RobotModel::getBodyId(std::string name)
   return id;
 }
 
-Eigen::Vector3d RobotModel::position(std::string srcFrame, std::string dstFrame, const Eigen::Vector3d& point)
+Eigen::Vector3d RobotModel::position(const std::string &srcFrame, const std::string &dstFrame, const Eigen::Vector3d& point)
 {
   RigidBodyDynamics::Math::Vector3d ptBase;
   RigidBodyDynamics::Math::Vector3d ptBody;
@@ -97,7 +102,7 @@ Eigen::Vector3d RobotModel::position(std::string srcFrame, std::string dstFrame,
   return ptBody;
 }
 
-Eigen::Vector3d RobotModel::jointPosition(std::string jointName, std::string frame)
+Eigen::Vector3d RobotModel::jointPosition(const std::string &jointName, const std::string &frame)
 {
   std::string jointParentBody = model.GetBodyName(getJointId(jointName) + 1);
 
@@ -123,8 +128,8 @@ double RobotModel::orientationYaw(const std::string& srcFrame, const std::string
 
 Eigen::Affine3d RobotModel::transformation(const std::string& srcFrame, const std::string& dstFrame)
 {
-  Eigen::Affine3d rotation(orientation(srcFrame, dstFrame));
-  Eigen::Translation3d translation(-position(srcFrame, dstFrame));
+  Eigen::Affine3d rotation(orientation(dstFrame, srcFrame));
+  Eigen::Translation3d translation(-position(dstFrame, srcFrame));
 
   return rotation * translation;
 }

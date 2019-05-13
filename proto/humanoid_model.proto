@@ -1,0 +1,38 @@
+syntax = "proto2";
+
+// 3D position
+message HumanoidModelPosition
+{
+  required float x = 1;
+  required float y = 2;
+  required float z = 3;
+}
+
+// 3D orientation
+message HumanoidModelQuaternion
+{
+  // Rotation (quaternions)
+  required float qx = 1;
+  required float qy = 2;
+  required float qz = 3;
+  required float qw = 4;
+};
+
+// Pose
+message HumanoidModelPose
+{
+  required HumanoidModelPosition position = 1;
+  required HumanoidModelQuaternion orientation = 2;
+}
+
+message HumanoidModelMsg
+{
+  // Degrees of freedom positions
+  repeated float dofs = 1;
+
+  // Robot pose
+  required HumanoidModelPose robotToWorld = 2;
+
+  // Debug positions
+  repeated HumanoidModelPosition debugPositions = 3;
+}

@@ -2,21 +2,33 @@ cmake_minimum_required(VERSION 2.8)
 project(robot_model)
 
 find_package(catkin REQUIRED COMPONENTS
-  rbdl_urdfreader
+  rbdl_urdfreader ZeroMQ
 )
 
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES robot_model
-  CATKIN_DEPENDS rbdl_urdfreader
+  CATKIN_DEPENDS rbdl_urdfreader ZeroMQ
+)
+
+find_package(Protobuf REQUIRED)
+include_directories(${PROTOBUF_INCLUDE_DIRS})
+include_directories(${catkin_INCLUDE_DIRS})
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS
+    proto/humanoid_model.proto
 )
 
 set (SOURCES
   src/robot_model/robot_model.cpp
+  src/robot_model/humanoid_model.cpp
+  ${PROTO_SRCS}
+  ${PROTO_HDRS} 
 )
 
 add_library(robot_model ${SOURCES})
-target_link_libraries(robot_model ${catkin_LIBRARIES})
+target_link_libraries(robot_model ${catkin_LIBRARIES} ${PROTOBUF_LIBRARIES})
 
 include_directories(${catkin_INCLUDE_DIRS} ./include)
 

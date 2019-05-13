@@ -1,27 +1,24 @@
+#include <unistd.h>
 #include <iostream>
-#include "robot_model/robot_model.h"
+#include "robot_model/humanoid_model.h"
 
 int main()
 {
-  rhoban::RobotModel robot;
+  rhoban::HumanoidModel robot;
 
-  // Printing robot DOFs
-  std::cout << "Robot DOFs: ";
-  for (auto entry : robot.getDofNames()) {
-    std::cout << entry << " ";
+  robot.startServer();
+
+  robot.worldToRobot = robot.worldToRobot * Eigen::Translation3d(0.5, 0, -0.5);
+
+  double t = 0;
+  while (true)
+  {
+    usleep(10000);
+    t += 0.01;
+    robot.setDof("left_knee", sin(t));
+    robot.setDof("left_hip_roll", sin(t));
+    robot.setDof("left_ankle_pitch", sin(t));
+    robot.worldToRobot = Eigen::AngleAxisd(0.01, Eigen::Vector3d::UnitZ())*robot.worldToRobot;
+    robot.publishModel();
   }
-  std::cout << std::endl;
-
-  // Turning left hip yaw and printing left foot orientation in trunk frame
-  // robot.resetDofs();
-  // for (double alpha = 0; alpha < M_PI / 2; alpha += 0.1)
-  // {
-  //   robot.setDof("left_hip_yaw", alpha);
-  //   std::cout << robot.orientationYaw("left_foot", "trunk") << std::endl;
-  // }
-
-  // std::cout << robot.position("left_knee_1", "trunk") << std::endl;
-
-  std::cout << robot.position("left_foot", "trunk") << std::endl;
-  std::cout << robot.jointPosition("left_ankle_pitch", "trunk") << std::endl;
 }
