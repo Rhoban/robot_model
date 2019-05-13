@@ -132,8 +132,14 @@ bool HumanoidModel::computeLegIK(HumanoidModel::Side side, const Eigen::Vector3d
   return true;
 }
 
-void HumanoidModel::setSupportFoot(Side side)
+void HumanoidModel::setSupportFoot(Side side, bool updateWorldPosition)
 {
+  if (updateWorldPosition)
+  {
+    worldToSupport = frameToWorld("flying_foot").inverse();
+    worldToSupport.translation().z() = 0;
+  }
+
   // Initializing aliases
   supportFoot = side;
 
@@ -204,9 +210,9 @@ void HumanoidModel::publishModel()
   eigenToProtobuf(frameToWorld("origin"), msg.mutable_robottoworld());
 
   // Debugging frame positions
-  eigenToProtobuf(frameToWorld("trunk"), msg.add_debugpositions());
-  eigenToProtobuf(frameToWorld("left_foot"), msg.add_debugpositions());
-  eigenToProtobuf(frameToWorld("right_foot"), msg.add_debugpositions());
+  // eigenToProtobuf(frameToWorld("trunk"), msg.add_debugpositions());
+  // eigenToProtobuf(frameToWorld("left_foot"), msg.add_debugpositions());
+  // eigenToProtobuf(frameToWorld("right_foot"), msg.add_debugpositions());
 
   // Sending it through PUB/SUB
   zmq::message_t packet(msg.ByteSize());

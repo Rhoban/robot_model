@@ -30,7 +30,7 @@ public:
                     const Eigen::Matrix3d& footRotation = Eigen::Matrix3d::Identity());
 
   // Set support foot
-  void setSupportFoot(Side side);
+  void setSupportFoot(Side side, bool updateWorldPosition = false);
 
   // Sets the IMU matrix
   void setImu(double yaw, double pitch, double roll);
