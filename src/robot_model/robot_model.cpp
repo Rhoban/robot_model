@@ -22,10 +22,24 @@ RobotModel::RobotModel(std::string filename)
   // Initializing dofs vectors with zeros
   resetDofs();
 
+  isDirty = true;
   bodyAliases["origin"] = "ROOT";
 }
 
-bool RobotModel::hasDof(const std::string &name)
+RobotModel::~RobotModel()
+{
+}
+
+void RobotModel::update()
+{
+  if (isDirty)
+  {
+    isDirty = false;
+    RigidBodyDynamics::UpdateKinematicsCustom(model, &dofs, nullptr, nullptr);
+  }
+}
+
+bool RobotModel::hasDof(const std::string& name)
 {
   return dofToId.count(name);
 }
@@ -46,7 +60,7 @@ void RobotModel::resetDofs()
   dofs = RigidBodyDynamics::Math::VectorNd::Zero(model.dof_count);
 }
 
-unsigned int RobotModel::getJointId(const std::string &name)
+unsigned int RobotModel::getJointId(const std::string& name)
 {
   if (dofToId.count(name))
   {
@@ -61,17 +75,18 @@ unsigned int RobotModel::getJointId(const std::string &name)
   }
 }
 
-void RobotModel::setDof(const std::string &name, double value)
+void RobotModel::setDof(const std::string& name, double value)
 {
+  isDirty = true;
   dofs[getJointId(name)] = value;
 }
 
-double RobotModel::getDof(const std::string &name)
+double RobotModel::getDof(const std::string& name)
 {
   return dofs[getJointId(name)];
 }
 
-unsigned int RobotModel::getBodyId(const std::string &name)
+unsigned int RobotModel::getBodyId(const std::string& name)
 {
   if (bodyAliases.count(name))
   {
@@ -91,18 +106,21 @@ unsigned int RobotModel::getBodyId(const std::string &name)
   return id;
 }
 
-Eigen::Vector3d RobotModel::position(const std::string &srcFrame, const std::string &dstFrame, const Eigen::Vector3d& point)
+Eigen::Vector3d RobotModel::position(const std::string& srcFrame, const std::string& dstFrame,
+                                     const Eigen::Vector3d& point)
 {
+  update();
+
   RigidBodyDynamics::Math::Vector3d ptBase;
   RigidBodyDynamics::Math::Vector3d ptBody;
 
-  ptBase = RigidBodyDynamics::CalcBodyToBaseCoordinates(model, dofs, getBodyId(srcFrame), point, true);
-  ptBody = RigidBodyDynamics::CalcBaseToBodyCoordinates(model, dofs, getBodyId(dstFrame), ptBase, true);
+  ptBase = RigidBodyDynamics::CalcBodyToBaseCoordinates(model, dofs, getBodyId(srcFrame), point, false);
+  ptBody = RigidBodyDynamics::CalcBaseToBodyCoordinates(model, dofs, getBodyId(dstFrame), ptBase, false);
 
   return ptBody;
 }
 
-Eigen::Vector3d RobotModel::jointPosition(const std::string &jointName, const std::string &frame)
+Eigen::Vector3d RobotModel::jointPosition(const std::string& jointName, const std::string& frame)
 {
   std::string jointParentBody = model.GetBodyName(getJointId(jointName) + 1);
 
@@ -111,10 +129,12 @@ Eigen::Vector3d RobotModel::jointPosition(const std::string &jointName, const st
 
 Eigen::Matrix3d RobotModel::orientation(const std::string& srcFrame, const std::string& dstFrame)
 {
+  update();
+
   RigidBodyDynamics::Math::Matrix3d transform1;
-  transform1 = RigidBodyDynamics::CalcBodyWorldOrientation(model, dofs, getBodyId(srcFrame), true);
+  transform1 = RigidBodyDynamics::CalcBodyWorldOrientation(model, dofs, getBodyId(srcFrame), false);
   RigidBodyDynamics::Math::Matrix3d transform2;
-  transform2 = RigidBodyDynamics::CalcBodyWorldOrientation(model, dofs, getBodyId(dstFrame), true);
+  transform2 = RigidBodyDynamics::CalcBodyWorldOrientation(model, dofs, getBodyId(dstFrame), false);
 
   return transform1 * transform2.transpose();
 }

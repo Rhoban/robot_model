@@ -29,7 +29,7 @@ void eigenToProtobuf(Eigen::Affine3d pose, HumanoidModelPose* msgPose)
 namespace rhoban
 {
 HumanoidModel::HumanoidModel(std::string filename)
-  : RobotModel(filename), context(1), socket(context, ZMQ_PUB), serverStarted(false), isLeftSupport(false)
+  : RobotModel(filename), context(1), socket(context, ZMQ_PUB), serverStarted(false), legIK(nullptr)
 {
   worldToSupport = Eigen::Affine3d::Identity();
 
@@ -65,18 +65,84 @@ HumanoidModel::HumanoidModel(std::string filename)
     getBodyId(frame);
   }
 
-  setSupportFoot(false);
+  // Resetting DOFs
+  resetDofs();
+
+  // Measuring some distances
+  distFootYOffset = fabs(jointPosition("left_hip_yaw", "trunk").y());
+  distHipToKnee = fabs(jointPosition("left_hip_pitch", "trunk").z() - jointPosition("left_knee", "trunk").z());
+  distKneeToAnkle = fabs(jointPosition("left_knee", "trunk").z() - jointPosition("left_ankle_pitch", "trunk").z());
+  distAnkleToGround = fabs(jointPosition("left_ankle_pitch", "left_foot").z());
+  distHipToGround = (distHipToKnee + distKneeToAnkle + distAnkleToGround);
+  legIK = new LegIK::IK(distHipToKnee, distKneeToAnkle, distAnkleToGround);
+
+  // Initializing right support foot
+  setSupportFoot(Side::Left);
 }
 
-void HumanoidModel::setSupportFoot(bool left)
+HumanoidModel::~HumanoidModel()
+{
+  if (legIK != nullptr)
+  {
+    delete legIK;
+  }
+}
+
+bool HumanoidModel::computeLegIK(HumanoidModel::Side side, const Eigen::Vector3d& footPos,
+                                 const Eigen::Matrix3d& rotation)
+{
+  LegIK::Vector3D legIKTarget;
+  legIKTarget[0] = footPos.x();
+  legIKTarget[1] = footPos.y();
+  legIKTarget[2] = footPos.z();
+
+  if (side == Side::Left)
+  {
+    legIKTarget[1] -= distFootYOffset;
+  }
+  else
+  {
+    legIKTarget[1] += distFootYOffset;
+  }
+
+  LegIK::Frame3D legIKMatrix;
+  for (int a = 0; a < 3; a++)
+  {
+    for (int b = 0; b < 3; b++)
+    {
+      legIKMatrix[a][b] = rotation(a, b);
+    }
+  }
+
+  LegIK::Position result;
+  if (!legIK->compute(legIKTarget, legIKMatrix, result))
+  {
+    return false;
+  }
+
+  std::string prefix = (side == Side::Left ? "left" : "right");
+  setDof(prefix + "_hip_yaw", result.theta[0]);
+  setDof(prefix + "_hip_roll", result.theta[1]);
+  setDof(prefix + "_hip_pitch", -result.theta[2]);
+  setDof(prefix + "_knee", result.theta[3]);
+  setDof(prefix + "_ankle_pitch", -result.theta[4]);
+  setDof(prefix + "_ankle_roll", result.theta[5]);
+
+  return true;
+}
+
+void HumanoidModel::setSupportFoot(Side side)
 {
   // Initializing aliases
-  isLeftSupport = left;
+  supportFoot = side;
 
-  if (left) {
+  if (side == Side::Left)
+  {
     bodyAliases["support_foot"] = "left_foot";
     bodyAliases["flying_foot"] = "right_foot";
-  } else {
+  }
+  else
+  {
     bodyAliases["support_foot"] = "right_foot";
     bodyAliases["flying_foot"] = "left_foot";
   }
@@ -115,9 +181,9 @@ void HumanoidModel::publishModel()
   eigenToProtobuf(frameToWorld("origin"), msg.mutable_robottoworld());
 
   // Debugging frame positions
-  // eigenToProtobuf(robotToWorld * transformation("trunk", "origin"), msg.add_debugpositions());
-  // eigenToProtobuf(robotToWorld * transformation("left_foot", "origin"), msg.add_debugpositions());
-  // eigenToProtobuf(robotToWorld * transformation("right_foot", "origin"), msg.add_debugpositions());
+  eigenToProtobuf(frameToWorld("trunk"), msg.add_debugpositions());
+  eigenToProtobuf(frameToWorld("left_foot"), msg.add_debugpositions());
+  eigenToProtobuf(frameToWorld("right_foot"), msg.add_debugpositions());
 
   // Sending it through PUB/SUB
   zmq::message_t packet(msg.ByteSize());

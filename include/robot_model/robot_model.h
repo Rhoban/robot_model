@@ -10,6 +10,7 @@ class RobotModel
 {
 public:
   RobotModel(std::string filename = "robot.urdf");
+  virtual ~RobotModel();
 
   // Checks if a dof is present in the model
   bool hasDof(const std::string &name);
@@ -48,5 +49,9 @@ public:
 
   // Body name aliases
   std::map<std::string, std::string> bodyAliases;
+
+  void update();
+
+  bool isDirty;
 };
 }  // namespace rhoban

@@ -2,13 +2,13 @@ cmake_minimum_required(VERSION 2.8)
 project(robot_model)
 
 find_package(catkin REQUIRED COMPONENTS
-  rbdl_urdfreader ZeroMQ
+  rbdl_urdfreader ZeroMQ rhoban_utils
 )
 
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES robot_model
-  CATKIN_DEPENDS rbdl_urdfreader ZeroMQ
+  CATKIN_DEPENDS rbdl_urdfreader ZeroMQ rhoban_utils
 )
 
 find_package(Protobuf REQUIRED)
@@ -23,6 +23,7 @@ PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS
 set (SOURCES
   src/robot_model/robot_model.cpp
   src/robot_model/humanoid_model.cpp
+  src/robot_model/leg_ik.cpp
   ${PROTO_SRCS}
   ${PROTO_HDRS} 
 )

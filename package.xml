@@ -13,9 +13,11 @@
 
   <build_depend>ZeroMQ</build_depend> <!-- rhobandeps/libzmq -->
   <build_depend>rbdl_urdfreader</build_depend> <!-- rhobandeps/rbdl -->
+  <build_depend>rhoban_utils</build_depend> <!-- rhoban/utils -->
 
   <run_depend>ZeroMQ</run_depend>
   <run_depend>rbdl_urdfreader</run_depend>
+  <run_depend>rhoban_utils</run_depend> -->
 
   <export>
   </export>
