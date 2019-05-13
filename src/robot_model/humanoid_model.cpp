@@ -31,8 +31,8 @@ namespace rhoban
 HumanoidModel::HumanoidModel(std::string filename)
   : RobotModel(filename), context(1), socket(context, ZMQ_PUB), serverStarted(false), legIK(nullptr)
 {
-  worldToSupport = Eigen::Affine3d::Identity();
-  worldToSupportPitchRoll = worldToSupport;
+  supportToWorld = Eigen::Affine3d::Identity();
+  supportToWorldPitchRoll = supportToWorld;
 
   // Degrees of freedom
   dofs = { "head_yaw",        "head_pitch",           "left_shoulder_pitch", "left_shoulder_roll",
@@ -136,8 +136,8 @@ void HumanoidModel::setSupportFoot(Side side, bool updateWorldPosition)
 {
   if (updateWorldPosition)
   {
-    worldToSupport = frameToWorld("flying_foot").inverse();
-    worldToSupport.translation().z() = 0;
+    supportToWorld = frameToWorld("flying_foot");
+    supportToWorld.translation().z() = 0;
   }
 
   // Initializing aliases
@@ -155,30 +155,38 @@ void HumanoidModel::setSupportFoot(Side side, bool updateWorldPosition)
   }
 }
 
+// trunkToWorld = imu*supportToTrunk = supportToWorld
+
 void HumanoidModel::setImu(double yaw, double pitch, double roll)
 {
   // We update world to support, that suppose that foot is flat on ground
   Eigen::Matrix3d imuMatrix = Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()).toRotationMatrix();
 
-  Eigen::Affine3d newWorldToSupport(imuMatrix.inverse());
-  newWorldToSupport.translation() = worldToSupport.translation();
-  worldToSupport = newWorldToSupport;
+  Eigen::Affine3d newSupportToWorld = Eigen::Affine3d::Identity();
+  newSupportToWorld.linear() =
+      (imuMatrix * Eigen::AngleAxisd(orientationYaw("support_foot", "trunk"), Eigen::Vector3d::UnitZ()));
+  newSupportToWorld.translation() = supportToWorld.translation();
+  supportToWorld = newSupportToWorld;
 
   // We update worldToSupportPitchRoll, that take in account the pitch and roll from the IMU
   imuMatrix = imuMatrix * Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()).toRotationMatrix() *
               Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX()).toRotationMatrix();
 
-  Eigen::Affine3d newWorldToSupportPitchRoll(orientation("trunk", "support_foot") * imuMatrix.inverse());
-  newWorldToSupportPitchRoll.translation() = worldToSupport.translation();
-  worldToSupportPitchRoll = newWorldToSupportPitchRoll;
+  Eigen::Affine3d newWorldToSupportPitchRoll;
+  newWorldToSupportPitchRoll.linear() = (imuMatrix * orientation("support_foot", "trunk"));
+  newWorldToSupportPitchRoll.translation() = supportToWorld.translation();
+  supportToWorldPitchRoll = newWorldToSupportPitchRoll;
 }
 
-Eigen::Affine3d HumanoidModel::frameToWorld(const std::string& frame, bool pitchRoll)
+Eigen::Affine3d HumanoidModel::frameToWorld(const std::string& frame, bool flatFoot)
 {
-  if (pitchRoll) {
-    return worldToSupportPitchRoll.inverse() * transformation(frame, "support_foot");
-  } else {
-    return worldToSupport.inverse() * transformation(frame, "support_foot");
+  if (flatFoot)
+  {
+    return supportToWorld * transformation(frame, "support_foot");
+  }
+  else
+  {
+    return supportToWorldPitchRoll * transformation(frame, "support_foot");
   }
 }
 

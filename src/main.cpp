@@ -6,10 +6,10 @@
 int main()
 {
   rhoban::HumanoidModel robot;
-
   robot.startServer();
-
   rhoban_utils::Benchmark b(NULL, "robot_model");
+
+  robot.supportToWorld.translation().x() = 1;
 
   double t = 0;
   while (true)
@@ -21,13 +21,13 @@ int main()
     leftPos.x() = sin(t)*0.1;
     leftPos.y() = robot.distFootYOffset;
     leftPos.z() = (robot.supportFoot == robot.Right ? 0.002 : 0) + 0.03 - robot.distHipToGround;
-    robot.computeLegIK(robot.Left, leftPos, Eigen::AngleAxisd(sin(t), Eigen::Vector3d::UnitZ()).toRotationMatrix());
+    robot.computeLegIK(robot.Left, leftPos, Eigen::AngleAxisd(sin(t)*0, Eigen::Vector3d::UnitZ()).toRotationMatrix());
 
     Eigen::Vector3d rightPos;
     rightPos.x() = -sin(t)*0.1;
     rightPos.y() = -robot.distFootYOffset;
     rightPos.z() = (robot.supportFoot == robot.Left ? 0.002 : 0) + 0.03 - robot.distHipToGround;
-    robot.computeLegIK(robot.Right, rightPos, Eigen::AngleAxisd(-sin(t), Eigen::Vector3d::UnitZ()).toRotationMatrix());
+    robot.computeLegIK(robot.Right, rightPos, Eigen::AngleAxisd(-sin(t)*0, Eigen::Vector3d::UnitZ()).toRotationMatrix());
 
     double diff = rightPos.x() - leftPos.x();
     if (robot.supportFoot == robot.Right) {

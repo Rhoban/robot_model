@@ -143,7 +143,7 @@ double RobotModel::orientationYaw(const std::string& srcFrame, const std::string
 {
   Eigen::Matrix3d rotation = orientation(srcFrame, dstFrame);
 
-  return atan2(rotation(0, 1), rotation(0, 0));
+  return -atan2(rotation(0, 1), rotation(0, 0));
 }
 
 Eigen::Affine3d RobotModel::transformation(const std::string& srcFrame, const std::string& dstFrame)

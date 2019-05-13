@@ -36,16 +36,16 @@ public:
   void setImu(double yaw, double pitch, double roll);
 
   // Getting given frame to world
-  Eigen::Affine3d frameToWorld(const std::string& frame, bool pitchRoll = false);
+  Eigen::Affine3d frameToWorld(const std::string& frame, bool flatFoot = true);
 
   // Current support foot
   Side supportFoot;
 
   // World to support foot, flat on the ground
-  Eigen::Affine3d worldToSupport;
+  Eigen::Affine3d supportToWorld;
 
   // World to support foot, including IMU pitch/roll
-  Eigen::Affine3d worldToSupportPitchRoll;
+  Eigen::Affine3d supportToWorldPitchRoll;
 
   // Name of expected DOFs and frames in robot
   std::vector<std::string> dofs;
