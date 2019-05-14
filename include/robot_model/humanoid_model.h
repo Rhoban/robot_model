@@ -19,12 +19,18 @@ public:
     Right
   };
 
+  // Resets the world frame
+  void resetWorldFrame();
+
   // Compute the leg IK and update the model accordingly
   // Target is in trunk frame
+  // Output will be set in the reference map
   bool computeLegIK(std::map<std::string, double> &angles, Side side, const Eigen::Vector3d& footPos,
                     const Eigen::Matrix3d& footRotation = Eigen::Matrix3d::Identity());
 
   // Set support foot
+  // If updateWorldPosition is true, the supportToWorld matrix is updated, resulting in
+  // odometry
   void setSupportFoot(Side side, bool updateWorldPosition = false);
 
   // Sets the IMU matrix

@@ -7,9 +7,6 @@ namespace rhoban
 HumanoidModel::HumanoidModel(std::string filename)
   : RobotModel(filename), legIK(nullptr)
 {
-  supportToWorld = Eigen::Affine3d::Identity();
-  supportToWorldPitchRoll = supportToWorld;
-
   // Degrees of freedom
   dofs = { "head_yaw",        "head_pitch",           "left_shoulder_pitch", "left_shoulder_roll",
            "left_elbow",      "right_shoulder_pitch", "right_shoulder_roll", "right_elbow",
@@ -60,6 +57,15 @@ HumanoidModel::HumanoidModel(std::string filename)
   // Initalizing with no IMU constraint
   hasImu = false;
   imuYaw = imuPitch = imuRoll = 0;
+
+  resetWorldFrame();
+}
+
+void HumanoidModel::resetWorldFrame()
+{
+  supportToWorld = Eigen::Affine3d::Identity();
+  supportToWorld.translation().y() += supportFoot == Left ? distFootYOffset : -distFootYOffset;
+  supportToWorldPitchRoll = supportToWorld;
 }
 
 HumanoidModel::~HumanoidModel()
@@ -78,6 +84,7 @@ bool HumanoidModel::computeLegIK(std::map<std::string, double>& angles, Humanoid
   legIKTarget[1] = footPos.y();
   legIKTarget[2] = footPos.z();
 
+  // Applying foot Y offset because IK works in the hip motor intersections frame
   if (side == Side::Left)
   {
     legIKTarget[1] -= distFootYOffset;
@@ -87,6 +94,7 @@ bool HumanoidModel::computeLegIK(std::map<std::string, double>& angles, Humanoid
     legIKTarget[1] += distFootYOffset;
   }
 
+  // Copying rotation to the leg IK matrix
   rhoban_leg_ik::Frame3D legIKMatrix;
   for (int a = 0; a < 3; a++)
   {
@@ -125,6 +133,9 @@ void HumanoidModel::setSupportFoot(Side side, bool updateWorldPosition)
       // Forcing the pitch and roll of flying foot to be zero, keeping only the yaw part in rotation
       double yaw = -atan2(flyingFootToWorld.rotation()(0, 1), flyingFootToWorld.rotation()(0, 0));
       flyingFootToWorld.linear() = Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+
+      // Forbidding the new frame not to be on the ground
+      flyingFootToWorld.translation().z() = 0;
 
       // Assigning new supportToWorld matrix
       supportToWorld = flyingFootToWorld;
