@@ -58,6 +58,7 @@ std::vector<std::string> RobotModel::getDofNames()
 void RobotModel::resetDofs()
 {
   dofs = RigidBodyDynamics::Math::VectorNd::Zero(model.dof_count);
+  isDirty = true;
 }
 
 unsigned int RobotModel::getJointId(const std::string& name)
@@ -79,6 +80,15 @@ void RobotModel::setDof(const std::string& name, double value)
 {
   isDirty = true;
   dofs[getJointId(name)] = value;
+}
+
+void RobotModel::setDofs(const std::map<std::string, double> angles)
+{
+  isDirty = true;
+  for (auto& entry : angles)
+  {
+    dofs[getJointId(entry.first)] = entry.second;
+  }
 }
 
 double RobotModel::getDof(const std::string& name)

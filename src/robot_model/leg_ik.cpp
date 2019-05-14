@@ -9,7 +9,7 @@ using namespace std;
 
 #define DEG2RAD(x) ((x)*M_PI / 180.0)
 
-namespace LegIK
+namespace rhoban_leg_ik
 {
 /*****************************************************************************/
 #define ik_global_epsilon 0.0000001

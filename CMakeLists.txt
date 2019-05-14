@@ -23,6 +23,7 @@ PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS
 set (SOURCES
   src/robot_model/robot_model.cpp
   src/robot_model/humanoid_model.cpp
+  src/robot_model/humanoid_server.cpp
   src/robot_model/leg_ik.cpp
   ${PROTO_SRCS}
   ${PROTO_HDRS} 

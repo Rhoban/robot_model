@@ -12,7 +12,7 @@
 #define IKDEBUG(command)
 #define IKMSG(command) command
 
-namespace LegIK
+namespace rhoban_leg_ik
 {
 /*****************************************************************************/
 

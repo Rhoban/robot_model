@@ -1,8 +1,6 @@
 #pragma once
 
 #include <iostream>
-#include <map>
-#include <zmq.hpp>
 
 #include "robot_model/robot_model.h"
 #include "robot_model/leg_ik.h"
@@ -15,9 +13,6 @@ public:
   HumanoidModel(std::string filename = "robot.urdf");
   virtual ~HumanoidModel();
 
-  void startServer();
-  void publishModel();
-
   enum Side
   {
     Left = 0,
@@ -26,14 +21,15 @@ public:
 
   // Compute the leg IK and update the model accordingly
   // Target is in trunk frame
-  bool computeLegIK(Side side, const Eigen::Vector3d& footPos,
+  bool computeLegIK(std::map<std::string, double> &angles, Side side, const Eigen::Vector3d& footPos,
                     const Eigen::Matrix3d& footRotation = Eigen::Matrix3d::Identity());
 
   // Set support foot
   void setSupportFoot(Side side, bool updateWorldPosition = false);
 
   // Sets the IMU matrix
-  void setImu(double yaw, double pitch, double roll);
+  void updateImu();
+  void setImu(bool present, double yaw = 0, double pitch = 0, double roll = 0);
 
   // Getting given frame to world
   Eigen::Affine3d frameToWorld(const std::string& frame, bool flatFoot = true);
@@ -68,11 +64,10 @@ public:
 
 protected:
   // Leg IK
-  LegIK::IK* legIK;
+  rhoban_leg_ik::IK* legIK;
 
-  // ZeroMQ PUB/SUB
-  zmq::context_t context;
-  zmq::socket_t socket;
-  bool serverStarted;
+  // Has IMU constraint
+  bool hasImu;
+  double imuYaw, imuPitch, imuRoll;
 };
 }  // namespace rhoban

@@ -1,35 +1,11 @@
 #include <algorithm>
 #include "robot_model/humanoid_model.h"
 #include <urdfreader/urdfreader.h>
-#include "humanoid_model.pb.h"
-
-void eigenToProtobuf(Eigen::Affine3d pose, HumanoidModelPosition* msgPosition)
-{
-  auto translation = pose.translation();
-  msgPosition->set_x(translation.x());
-  msgPosition->set_y(translation.y());
-  msgPosition->set_z(translation.z());
-}
-
-void eigenToProtobuf(Eigen::Affine3d pose, HumanoidModelQuaternion* msgOrientation)
-{
-  auto rotation = Eigen::Quaterniond(pose.rotation());
-  msgOrientation->set_qw(rotation.w());
-  msgOrientation->set_qx(rotation.x());
-  msgOrientation->set_qy(rotation.y());
-  msgOrientation->set_qz(rotation.z());
-}
-
-void eigenToProtobuf(Eigen::Affine3d pose, HumanoidModelPose* msgPose)
-{
-  eigenToProtobuf(pose, msgPose->mutable_position());
-  eigenToProtobuf(pose, msgPose->mutable_orientation());
-}
 
 namespace rhoban
 {
 HumanoidModel::HumanoidModel(std::string filename)
-  : RobotModel(filename), context(1), socket(context, ZMQ_PUB), serverStarted(false), legIK(nullptr)
+  : RobotModel(filename), legIK(nullptr)
 {
   supportToWorld = Eigen::Affine3d::Identity();
   supportToWorldPitchRoll = supportToWorld;
@@ -75,10 +51,15 @@ HumanoidModel::HumanoidModel(std::string filename)
   distKneeToAnkle = fabs(jointPosition("left_knee", "trunk").z() - jointPosition("left_ankle_pitch", "trunk").z());
   distAnkleToGround = fabs(jointPosition("left_ankle_pitch", "left_foot").z());
   distHipToGround = (distHipToKnee + distKneeToAnkle + distAnkleToGround);
-  legIK = new LegIK::IK(distHipToKnee, distKneeToAnkle, distAnkleToGround);
+  legIK = new rhoban_leg_ik::IK(distHipToKnee, distKneeToAnkle, distAnkleToGround);
 
   // Initializing right support foot
+  setSupportFoot(Side::Right);
   setSupportFoot(Side::Left);
+
+  // Initalizing with no IMU constraint
+  hasImu = false;
+  imuYaw = imuPitch = imuRoll = 0;
 }
 
 HumanoidModel::~HumanoidModel()
@@ -89,10 +70,10 @@ HumanoidModel::~HumanoidModel()
   }
 }
 
-bool HumanoidModel::computeLegIK(HumanoidModel::Side side, const Eigen::Vector3d& footPos,
-                                 const Eigen::Matrix3d& rotation)
+bool HumanoidModel::computeLegIK(std::map<std::string, double>& angles, HumanoidModel::Side side,
+                                 const Eigen::Vector3d& footPos, const Eigen::Matrix3d& rotation)
 {
-  LegIK::Vector3D legIKTarget;
+  rhoban_leg_ik::Vector3D legIKTarget;
   legIKTarget[0] = footPos.x();
   legIKTarget[1] = footPos.y();
   legIKTarget[2] = footPos.z();
@@ -106,7 +87,7 @@ bool HumanoidModel::computeLegIK(HumanoidModel::Side side, const Eigen::Vector3d
     legIKTarget[1] += distFootYOffset;
   }
 
-  LegIK::Frame3D legIKMatrix;
+  rhoban_leg_ik::Frame3D legIKMatrix;
   for (int a = 0; a < 3; a++)
   {
     for (int b = 0; b < 3; b++)
@@ -115,67 +96,91 @@ bool HumanoidModel::computeLegIK(HumanoidModel::Side side, const Eigen::Vector3d
     }
   }
 
-  LegIK::Position result;
+  rhoban_leg_ik::Position result;
   if (!legIK->compute(legIKTarget, legIKMatrix, result))
   {
     return false;
   }
 
   std::string prefix = (side == Side::Left ? "left" : "right");
-  setDof(prefix + "_hip_yaw", result.theta[0]);
-  setDof(prefix + "_hip_roll", result.theta[1]);
-  setDof(prefix + "_hip_pitch", -result.theta[2]);
-  setDof(prefix + "_knee", result.theta[3]);
-  setDof(prefix + "_ankle_pitch", -result.theta[4]);
-  setDof(prefix + "_ankle_roll", result.theta[5]);
+  angles[prefix + "_hip_yaw"] =  result.theta[0];
+  angles[prefix + "_hip_roll"] =  result.theta[1];
+  angles[prefix + "_hip_pitch"] =  -result.theta[2];
+  angles[prefix + "_knee"] =  result.theta[3];
+  angles[prefix + "_ankle_pitch"] =  -result.theta[4];
+  angles[prefix + "_ankle_roll"] =  result.theta[5];
 
   return true;
 }
 
 void HumanoidModel::setSupportFoot(Side side, bool updateWorldPosition)
 {
-  if (updateWorldPosition)
+  if (side != supportFoot)
   {
-    supportToWorld = frameToWorld("flying_foot");
-    supportToWorld.translation().z() = 0;
-  }
+    if (updateWorldPosition)
+    {
+      // Getting the flying foot in the world frame, supposing support foot is flat on the ground (no pitch or roll)
+      auto flyingFootToWorld = frameToWorld("flying_foot", true);
 
-  // Initializing aliases
-  supportFoot = side;
+      // Forcing the pitch and roll of flying foot to be zero, keeping only the yaw part in rotation
+      double yaw = -atan2(flyingFootToWorld.rotation()(0, 1), flyingFootToWorld.rotation()(0, 0));
+      flyingFootToWorld.linear() = Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()).toRotationMatrix();
 
-  if (side == Side::Left)
-  {
-    bodyAliases["support_foot"] = "left_foot";
-    bodyAliases["flying_foot"] = "right_foot";
-  }
-  else
-  {
-    bodyAliases["support_foot"] = "right_foot";
-    bodyAliases["flying_foot"] = "left_foot";
+      // Assigning new supportToWorld matrix
+      supportToWorld = flyingFootToWorld;
+    }
+
+    // Initializing aliases
+    supportFoot = side;
+
+    if (side == Side::Left)
+    {
+      bodyAliases["support_foot"] = "left_foot";
+      bodyAliases["flying_foot"] = "right_foot";
+    }
+    else
+    {
+      bodyAliases["support_foot"] = "right_foot";
+      bodyAliases["flying_foot"] = "left_foot";
+    }
+    
+    updateImu();
   }
 }
 
-// trunkToWorld = imu*supportToTrunk = supportToWorld
-
-void HumanoidModel::setImu(double yaw, double pitch, double roll)
+void HumanoidModel::updateImu()
 {
-  // We update world to support, that suppose that foot is flat on ground
-  Eigen::Matrix3d imuMatrix = Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  if (hasImu) {
+    // We update world to support, that suppose that foot is flat on ground
+    Eigen::Matrix3d imuMatrix = Eigen::AngleAxisd(imuYaw, Eigen::Vector3d::UnitZ()).toRotationMatrix();
 
-  Eigen::Affine3d newSupportToWorld = Eigen::Affine3d::Identity();
-  newSupportToWorld.linear() =
-      (imuMatrix * Eigen::AngleAxisd(orientationYaw("support_foot", "trunk"), Eigen::Vector3d::UnitZ()));
-  newSupportToWorld.translation() = supportToWorld.translation();
-  supportToWorld = newSupportToWorld;
+    Eigen::Affine3d newSupportToWorld = Eigen::Affine3d::Identity();
+    newSupportToWorld.linear() =
+        (imuMatrix * Eigen::AngleAxisd(orientationYaw("support_foot", "trunk"), Eigen::Vector3d::UnitZ()));
+    newSupportToWorld.translation() = supportToWorld.translation();
+    supportToWorld = newSupportToWorld;
 
-  // We update worldToSupportPitchRoll, that take in account the pitch and roll from the IMU
-  imuMatrix = imuMatrix * Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()).toRotationMatrix() *
-              Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX()).toRotationMatrix();
+    // We update worldToSupportPitchRoll, that take in account the pitch and roll from the IMU
+    imuMatrix = imuMatrix * Eigen::AngleAxisd(imuPitch, Eigen::Vector3d::UnitY()).toRotationMatrix() *
+                Eigen::AngleAxisd(imuRoll, Eigen::Vector3d::UnitX()).toRotationMatrix();
 
-  Eigen::Affine3d newWorldToSupportPitchRoll;
-  newWorldToSupportPitchRoll.linear() = (imuMatrix * orientation("support_foot", "trunk"));
-  newWorldToSupportPitchRoll.translation() = supportToWorld.translation();
-  supportToWorldPitchRoll = newWorldToSupportPitchRoll;
+    Eigen::Affine3d newSupportToWorldPitchRoll;
+    newSupportToWorldPitchRoll.linear() = (imuMatrix * orientation("support_foot", "trunk"));
+    newSupportToWorldPitchRoll.translation() = supportToWorld.translation();
+    supportToWorldPitchRoll = newSupportToWorldPitchRoll;
+  } else {
+    supportToWorldPitchRoll = supportToWorld;    
+  }
+}
+
+void HumanoidModel::setImu(bool present, double yaw, double pitch, double roll)
+{
+  hasImu = present;
+  imuYaw = yaw;
+  imuPitch = pitch;
+  imuRoll = roll;
+
+  updateImu();
 }
 
 Eigen::Affine3d HumanoidModel::frameToWorld(const std::string& frame, bool flatFoot)
@@ -190,43 +195,4 @@ Eigen::Affine3d HumanoidModel::frameToWorld(const std::string& frame, bool flatF
   }
 }
 
-void HumanoidModel::startServer()
-{
-  if (!serverStarted)
-  {
-    socket.bind("tcp://*:7332");
-    serverStarted = true;
-  }
-}
-
-void HumanoidModel::publishModel()
-{
-  if (!serverStarted)
-  {
-    throw std::runtime_error("HumanoidModel: trying to publish model where server is not started");
-  }
-
-  HumanoidModelMsg msg;
-
-  // Adding DOFs, the order is alphabetical (because dofs was orted out)
-  for (auto& dof : dofs)
-  {
-    msg.add_dofs(getDof(dof));
-  }
-
-  // Adding robot Pose
-  eigenToProtobuf(frameToWorld("origin"), msg.mutable_robottoworld());
-
-  // Debugging frame positions
-  // eigenToProtobuf(frameToWorld("trunk"), msg.add_debugpositions());
-  // eigenToProtobuf(frameToWorld("left_foot"), msg.add_debugpositions());
-  // eigenToProtobuf(frameToWorld("right_foot"), msg.add_debugpositions());
-
-  // Sending it through PUB/SUB
-  zmq::message_t packet(msg.ByteSize());
-  msg.SerializeToArray(packet.data(), packet.size());
-
-  // Sending packet
-  socket.send(packet);
-}
 }  // namespace rhoban

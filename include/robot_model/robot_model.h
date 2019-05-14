@@ -20,6 +20,7 @@ public:
 
   // Sets the value of a dof [rad]
   void setDof(const std::string &name, double value);
+  void setDofs(const std::map<std::string, double> angles);
   double getDof(const std::string &name);
 
   // Reset all DOFs to 0 position
