@@ -40,6 +40,9 @@ public:
   // Getting given frame to world
   Eigen::Affine3d frameToWorld(const std::string& frame, bool flatFoot = true);
 
+  // Get the pan and tilt target for the camera to look at a position target
+  bool cameraLookAt(double& panDOF, double& tiltDOF, const Eigen::Vector3d& posTarget);
+
   // Current support foot
   Side supportFoot;
 
@@ -67,6 +70,11 @@ public:
 
   // Z offset distance from hip to ground [m]
   double distHipToGround;
+
+  // Head yaw to pitch delta Z
+  double distHeadYawToPitchZ;
+  double distHeadPitchToCameraZ;
+  double distHeadPitchToCameraX;
 
 protected:
   // Leg IK
