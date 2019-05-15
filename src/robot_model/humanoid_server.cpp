@@ -1,12 +1,16 @@
 #include "robot_model/humanoid_server.h"
 #include "humanoid_model.pb.h"
 
-void eigenToProtobuf(Eigen::Affine3d pose, HumanoidModelPosition* msgPosition)
+void eigenToProtobuf(Eigen::Vector3d translation, HumanoidModelPosition* msgPosition)
 {
-  auto translation = pose.translation();
   msgPosition->set_x(translation.x());
   msgPosition->set_y(translation.y());
   msgPosition->set_z(translation.z());
+}
+
+void eigenToProtobuf(Eigen::Affine3d pose, HumanoidModelPosition* msgPosition)
+{
+  eigenToProtobuf(pose.translation(), msgPosition);
 }
 
 void eigenToProtobuf(Eigen::Affine3d pose, HumanoidModelQuaternion* msgOrientation)
@@ -26,7 +30,7 @@ void eigenToProtobuf(Eigen::Affine3d pose, HumanoidModelPose* msgPose)
 
 namespace rhoban
 {
-HumanoidServer::HumanoidServer() : context(1), socket(context, ZMQ_PUB), serverStarted(false)
+HumanoidServer::HumanoidServer() : context(1), socket(context, ZMQ_PUB), serverStarted(false), hasBall(false)
 {
 }
 
@@ -37,6 +41,12 @@ void HumanoidServer::start()
     socket.bind("tcp://*:7332");
     serverStarted = true;
   }
+}
+
+void HumanoidServer::setBallPosition(Eigen::Vector3d ballPosition_)
+{
+  ballPosition = ballPosition_;
+  hasBall = true;
 }
 
 void HumanoidServer::publishModel(rhoban::HumanoidModel& model, bool flatFoot)
@@ -61,6 +71,11 @@ void HumanoidServer::publishModel(rhoban::HumanoidModel& model, bool flatFoot)
   // eigenToProtobuf(frameToWorld("trunk"), msg.add_debugpositions());
   // eigenToProtobuf(frameToWorld("left_foot"), msg.add_debugpositions());
   // eigenToProtobuf(frameToWorld("right_foot"), msg.add_debugpositions());
+
+  if (hasBall)
+  {
+    eigenToProtobuf(ballPosition, msg.mutable_ballposition());
+  }
 
   // Sending it through PUB/SUB
   zmq::message_t packet(msg.ByteSize());

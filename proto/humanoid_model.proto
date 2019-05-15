@@ -35,4 +35,7 @@ message HumanoidModelMsg
 
   // Debug positions
   repeated HumanoidModelPosition debugPositions = 3;
+
+  // Ball position
+  optional HumanoidModelPosition ballPosition = 4;
 }

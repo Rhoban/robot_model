@@ -12,6 +12,10 @@ public:
   void start();
   void publishModel(rhoban::HumanoidModel& model, bool flatFoot = true);
 
+  void setBallPosition(Eigen::Vector3d ballPosition);
+  Eigen::Vector3d ballPosition;
+  bool hasBall;
+
   // ZeroMQ PUB/SUB
   zmq::context_t context;
   zmq::socket_t socket;

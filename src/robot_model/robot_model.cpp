@@ -5,7 +5,9 @@ namespace rhoban
 {
 double frameYaw(Eigen::Matrix3d rotation)
 {
-  return -atan2(rotation(0, 1), rotation(0, 0));
+  Eigen::Vector3d xInNewFrame = rotation * Eigen::Vector3d::UnitX();
+  
+  return atan2(xInNewFrame.y(), xInNewFrame.x());
 }
 
 RobotModel::RobotModel(std::string filename)
