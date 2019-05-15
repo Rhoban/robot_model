@@ -196,7 +196,8 @@ Eigen::Affine3d HumanoidModel::flyingFootFlattenedToWorld()
   auto flyingFootToWorld = frameToWorld("flying_foot", true);
 
   // Forcing the pitch and roll of flying foot to be zero, keeping only the yaw part in rotation
-  flyingFootToWorld.linear() = Eigen::AngleAxisd(frameYaw(flyingFootToWorld.rotation()), Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  flyingFootToWorld.linear() =
+      Eigen::AngleAxisd(frameYaw(flyingFootToWorld.rotation()), Eigen::Vector3d::UnitZ()).toRotationMatrix();
 
   // Forbidding the new frame not to be on the ground
   flyingFootToWorld.translation().z() = 0;

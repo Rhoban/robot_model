@@ -6,7 +6,7 @@ namespace rhoban
 double frameYaw(Eigen::Matrix3d rotation)
 {
   Eigen::Vector3d xInNewFrame = rotation * Eigen::Vector3d::UnitX();
-  
+
   return atan2(xInNewFrame.y(), xInNewFrame.x());
 }
 
