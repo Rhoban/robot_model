@@ -201,6 +201,8 @@ Eigen::Affine3d HumanoidModel::flyingFootFlattenedToWorld()
 
   // Forbidding the new frame not to be on the ground
   flyingFootToWorld.translation().z() = 0;
+
+  return flyingFootToWorld;
 }
 
 Eigen::Affine3d HumanoidModel::frameToWorld(const std::string& frame, bool flatFoot)
