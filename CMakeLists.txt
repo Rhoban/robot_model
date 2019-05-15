@@ -5,6 +5,9 @@ find_package(catkin REQUIRED COMPONENTS
   rbdl_urdfreader ZeroMQ rhoban_utils
 )
 
+set(OpenCV_DIR "/usr/local/include/")
+find_package(OpenCV 3.2.0 REQUIRED)
+
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES robot_model
@@ -15,6 +18,7 @@ find_package(Protobuf REQUIRED)
 include_directories(${PROTOBUF_INCLUDE_DIRS})
 include_directories(${catkin_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${OpenCV_INCLUDE_DIRS})
 
 PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS
     proto/humanoid_model.proto
@@ -24,13 +28,14 @@ set (SOURCES
   src/robot_model/robot_model.cpp
   src/robot_model/humanoid_model.cpp
   src/robot_model/humanoid_server.cpp
+  src/robot_model/camera_model.cpp
   src/robot_model/leg_ik.cpp
   ${PROTO_SRCS}
   ${PROTO_HDRS} 
 )
 
 add_library(robot_model ${SOURCES})
-target_link_libraries(robot_model ${catkin_LIBRARIES} ${PROTOBUF_LIBRARIES})
+target_link_libraries(robot_model ${catkin_LIBRARIES} ${PROTOBUF_LIBRARIES} ${OpenCV_LIBS})
 
 include_directories(${catkin_INCLUDE_DIRS} ./include)
 

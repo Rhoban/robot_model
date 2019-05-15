@@ -37,8 +37,15 @@ public:
   void updateImu();
   void setImu(bool present, double yaw = 0, double pitch = 0, double roll = 0);
 
+  // Flying foot frame, flatenned on the ground in the
+  Eigen::Affine3d flyingFootFlattenedToWorld();
+
   // Getting given frame to world
   Eigen::Affine3d frameToWorld(const std::string& frame, bool flatFoot = true);
+
+  // Gets the self frame in world
+  // This frame is the weighted average of the support foot and the flatenned flying foot
+  Eigen::Affine3d selfToWorld();
 
   // Get the pan and tilt target for the camera to look at a position target
   bool cameraLookAt(double& panDOF, double& tiltDOF, const Eigen::Vector3d& posTarget);

@@ -6,6 +6,8 @@
 
 namespace rhoban
 {
+double frameYaw(Eigen::Matrix3d rotation);
+
 class RobotModel
 {
 public:

@@ -3,6 +3,11 @@
 
 namespace rhoban
 {
+double frameYaw(Eigen::Matrix3d rotation)
+{
+  return -atan2(rotation(0, 1), rotation(0, 0));
+}
+
 RobotModel::RobotModel(std::string filename)
 {
   std::vector<std::string> jointNames;
@@ -153,7 +158,7 @@ double RobotModel::orientationYaw(const std::string& srcFrame, const std::string
 {
   Eigen::Matrix3d rotation = orientation(srcFrame, dstFrame);
 
-  return -atan2(rotation(0, 1), rotation(0, 0));
+  return frameYaw(rotation);
 }
 
 Eigen::Affine3d RobotModel::transformation(const std::string& srcFrame, const std::string& dstFrame)

@@ -1,5 +1,6 @@
 #include <algorithm>
 #include "robot_model/humanoid_model.h"
+#include "rhoban_utils/history/history.h"
 #include <urdfreader/urdfreader.h>
 
 namespace rhoban
@@ -129,18 +130,8 @@ void HumanoidModel::setSupportFoot(Side side, bool updateWorldPosition)
   {
     if (updateWorldPosition)
     {
-      // Getting the flying foot in the world frame, supposing support foot is flat on the ground (no pitch or roll)
-      auto flyingFootToWorld = frameToWorld("flying_foot", true);
-
-      // Forcing the pitch and roll of flying foot to be zero, keeping only the yaw part in rotation
-      double yaw = -atan2(flyingFootToWorld.rotation()(0, 1), flyingFootToWorld.rotation()(0, 0));
-      flyingFootToWorld.linear() = Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()).toRotationMatrix();
-
-      // Forbidding the new frame not to be on the ground
-      flyingFootToWorld.translation().z() = 0;
-
       // Assigning new supportToWorld matrix
-      supportToWorld = flyingFootToWorld;
+      supportToWorld = flyingFootFlattenedToWorld();
     }
 
     // Initializing aliases
@@ -199,6 +190,19 @@ void HumanoidModel::setImu(bool present, double yaw, double pitch, double roll)
   updateImu();
 }
 
+Eigen::Affine3d HumanoidModel::flyingFootFlattenedToWorld()
+{
+  // Getting the flying foot in the world frame, supposing support foot is flat on the ground (no pitch or roll)
+  auto flyingFootToWorld = frameToWorld("flying_foot", true);
+
+  // Forcing the pitch and roll of flying foot to be zero, keeping only the yaw part in rotation
+  double yaw = -atan2(flyingFootToWorld.rotation()(0, 1), flyingFootToWorld.rotation()(0, 0));
+  flyingFootToWorld.linear() = Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+
+  // Forbidding the new frame not to be on the ground
+  flyingFootToWorld.translation().z() = 0;
+}
+
 Eigen::Affine3d HumanoidModel::frameToWorld(const std::string& frame, bool flatFoot)
 {
   if (flatFoot)
@@ -209,6 +213,11 @@ Eigen::Affine3d HumanoidModel::frameToWorld(const std::string& frame, bool flatF
   {
     return supportToWorldPitchRoll * transformation(frame, "support_foot");
   }
+}
+
+Eigen::Affine3d HumanoidModel::selfToWorld()
+{
+  return rhoban_utils::averageFrames(supportToWorld, flyingFootFlattenedToWorld(), 0.5);
 }
 
 bool HumanoidModel::cameraLookAt(double& panDOF, double& tiltDOF, const Eigen::Vector3d& posTarget)
