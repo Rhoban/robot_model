@@ -38,4 +38,7 @@ message HumanoidModelMsg
 
   // Ball position
   optional HumanoidModelPosition ballPosition = 4;
+
+  // Field pose
+  optional HumanoidModelPose fieldToWorld = 5;
 }

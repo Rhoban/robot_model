@@ -32,6 +32,7 @@ namespace rhoban
 {
 HumanoidServer::HumanoidServer() : context(1), socket(context, ZMQ_PUB), serverStarted(false), hasBall(false)
 {
+  fieldPose = Eigen::Affine3d::Identity();
 }
 
 void HumanoidServer::start()
@@ -47,6 +48,11 @@ void HumanoidServer::setBallPosition(Eigen::Vector3d ballPosition_)
 {
   ballPosition = ballPosition_;
   hasBall = true;
+}
+
+void HumanoidServer::setFieldPose(Eigen::Affine3d fieldPose_)
+{
+  fieldPose = fieldPose;
 }
 
 void HumanoidServer::publishModel(rhoban::HumanoidModel& model, bool flatFoot)
@@ -72,10 +78,14 @@ void HumanoidServer::publishModel(rhoban::HumanoidModel& model, bool flatFoot)
   // eigenToProtobuf(frameToWorld("left_foot"), msg.add_debugpositions());
   // eigenToProtobuf(frameToWorld("right_foot"), msg.add_debugpositions());
 
+  // Ball pose
   if (hasBall)
   {
     eigenToProtobuf(ballPosition, msg.mutable_ballposition());
   }
+
+  // Adding field pose
+  eigenToProtobuf(fieldPose, msg.mutable_fieldtoworld());
 
   // Sending it through PUB/SUB
   zmq::message_t packet(msg.ByteSize());

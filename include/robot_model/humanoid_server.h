@@ -16,6 +16,9 @@ public:
   Eigen::Vector3d ballPosition;
   bool hasBall;
 
+  void setFieldPose(Eigen::Affine3d fieldPose);
+  Eigen::Affine3d fieldPose;
+
   // ZeroMQ PUB/SUB
   zmq::context_t context;
   zmq::socket_t socket;
