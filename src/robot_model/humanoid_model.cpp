@@ -226,54 +226,25 @@ bool HumanoidModel::cameraLookAt(double& panDOF, double& tiltDOF, const Eigen::V
 {
   // Compute view vector in head yaw frame
   Eigen::Affine3d headBaseToWorld = frameToWorld("head_base");
-  Eigen::Vector3d baseCenter = headBaseToWorld.translation();
-  Eigen::Matrix3d orientation = frameToWorld("trunk").inverse().rotation();
-  Eigen::Vector3d viewVector = posTarget - baseCenter;
-  Eigen::Vector3d viewVectorInBase = orientation * viewVector;
+  Eigen::Vector3d targetInHeadBase = headBaseToWorld.inverse() * posTarget;
 
-  // Compute yaw rotation around Z aligned with the target
-  double yaw = atan2(viewVectorInBase.y(), viewVectorInBase.x());
-  // Assign head yaw DOF
-  panDOF = yaw;
+  // The pan is simply the angle in the XY plane
+  panDOF = atan2(targetInHeadBase.y(), targetInHeadBase.x());
 
-  // Compute target in head_pitch frame fixed to head_yaw frame orientation
-  Eigen::Vector3d targetInBase = headBaseToWorld.inverse() * posTarget;
-  // Here, the head_yaw (no update) used is not aligned to the target point.
-  // The missing yaw orientation is manually computed to not update the model
-  double deltaYaw = yaw - getDof("head_yaw");
-  targetInBase = Eigen::AngleAxisd(-deltaYaw, Eigen::Vector3d::UnitZ()).toRotationMatrix() * targetInBase;
-  targetInBase.z() -= distHeadYawToPitchZ;
+  // We then consider the (head_base x axis, head_pitch) plane
+  Eigen::Vector2d targetInHeadPitchPlane(sqrt(pow(targetInHeadBase.x(), 2) + pow(targetInHeadBase.y(), 2)),
+                                         targetInHeadBase.z() - distHeadYawToPitchZ);
 
-  // Conversion of target point to polar representation
-  double R = targetInBase.norm();
-  double gamma = atan2(targetInBase.z(), targetInBase.x());
+  double theta = M_PI / 2 - atan2(targetInHeadPitchPlane.y(), targetInHeadPitchPlane.x());
 
-  // Compute polar distance for camera from pitch joint
-  double r = sqrt(pow(distHeadPitchToCameraZ, 2) + pow(distHeadPitchToCameraX, 2));
-  // Compute angular correction to handle a non null
-  // camera X translation offset
-  double epsilon = atan(distHeadPitchToCameraX / distHeadPitchToCameraZ);
-  double beta = epsilon;
-
-  // Do the math. Geometric method is used (Alkashi, Trigo, Thales).
-  // Use Maxima for system of 3 equations, 3 unknown solving
-  double B = sin(beta);
-  double cosAngle = r / R;
-  if (R * R + r * r * B * B - r * r <= 0.0)
+  // We just use beta = cos(opposed / hypothenus) to watch it with camera
+  double ratio = distHeadPitchToCameraZ / targetInHeadPitchPlane.norm();
+  if (ratio > 1 || ratio < -1)
   {
     return false;
   }
-  cosAngle = (B * sqrt(R * R + r * r * B * B - r * r) - r * B * B + r) / R;
-  if (cosAngle >= 1.0 || cosAngle <= -1.0)
-  {
-    return false;
-  }
-  double alpha = M_PI / 2.0 - acos(cosAngle) - gamma;
-  // Apply (inverse) angular correction to pitch
-  alpha += -epsilon;
-
-  // Assignement head pitch DOF
-  tiltDOF = alpha;
+  double beta = acos(ratio);
+  tiltDOF = theta - beta;
 
   return true;
 }
