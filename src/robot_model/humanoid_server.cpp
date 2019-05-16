@@ -52,7 +52,7 @@ void HumanoidServer::setBallPosition(Eigen::Vector3d ballPosition_)
 
 void HumanoidServer::setFieldPose(Eigen::Affine3d fieldPose_)
 {
-  fieldPose = fieldPose;
+  fieldPose = fieldPose_;
 }
 
 void HumanoidServer::publishModel(rhoban::HumanoidModel& model, bool flatFoot)
