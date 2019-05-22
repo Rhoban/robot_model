@@ -86,6 +86,11 @@ std::string CameraModel::getInvalidMsg() const
   return res;
 }
 
+cv::Size CameraModel::getImgSize() const
+{
+  return cv::Size(imgWidth, imgHeight);
+}
+
 int CameraModel::getImgWidth() const
 {
   return imgWidth;

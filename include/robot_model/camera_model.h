@@ -50,6 +50,7 @@ public:
   bool isValid() const;
   std::string getInvalidMsg() const;
 
+  cv::Size getImgSize() const;
   int getImgWidth() const;
   int getImgHeight() const;
   double getImgDiag() const;
@@ -155,4 +156,4 @@ private:
   Eigen::Vector2d tangentialCoeffs;
 };
 
-}  // namespace Leph
+}  // namespace rhoban
