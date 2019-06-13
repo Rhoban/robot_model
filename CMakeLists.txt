@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 project(robot_model)
 
 find_package(catkin REQUIRED COMPONENTS
-  rbdl_urdfreader ZeroMQ rhoban_utils
+  rbdl_urdfreader ZeroMQ rhoban_geometry
 )
 
 set(OpenCV_DIR "/usr/local/include/")
@@ -11,7 +11,7 @@ find_package(OpenCV 3.2.0 REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES robot_model
-  CATKIN_DEPENDS rbdl_urdfreader ZeroMQ rhoban_utils
+  CATKIN_DEPENDS rbdl_urdfreader ZeroMQ rhoban_geometry
 )
 
 find_package(Protobuf REQUIRED)

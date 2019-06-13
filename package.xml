@@ -2,7 +2,7 @@
 <package>
   <name>robot_model</name>
   <version>0.0.0</version>
-  <description>A fixed version of lwpr with catkin support</description>
+  <description>A lightweight repository for model of humanoid robot based on RBDL</description>
 
   <maintainer email="g.passault@gmail.com">Grégoire Passault</maintainer>
   <author email="g.passault@gmail.com">Grégoire Passault</author>
@@ -13,11 +13,11 @@
 
   <build_depend>ZeroMQ</build_depend> <!-- rhobandeps/libzmq -->
   <build_depend>rbdl_urdfreader</build_depend> <!-- rhobandeps/rbdl -->
-  <build_depend>rhoban_utils</build_depend> <!-- rhoban/utils -->
+  <build_depend>rhoban_geometry</build_depend> <!-- rhoban/geometry -->
 
   <run_depend>ZeroMQ</run_depend>
   <run_depend>rbdl_urdfreader</run_depend>
-  <run_depend>rhoban_utils</run_depend> -->
+  <run_depend>rhoban_geometry</run_depend> -->
 
   <export>
   </export>
