@@ -101,7 +101,37 @@ public:
   cv::Point2f toCorrectedImg(const cv::Point2f& imgPosUncorrected) const;
 
   /// From corrected image to uncorrected image
+  /// See also : isPointValidForCorrection
   cv::Point2f toUncorrectedImg(const cv::Point2f& imgPosCorrected) const;
+
+  /// The correction of the distortion is valid only in an area around the point
+  /// (0,0). Outside of this area, a point outside the image can be brought back
+  /// inside. For the moment, we only deal with the case in which only k1 and k2
+  /// are possibly non zeros. In this simplified model, we have:
+  ///    x_cor = P(r^2) * x_uncor
+  ///    y_cor = P(r^2) * y_uncor
+  /// with r^2 = x_uncor^2 + y_uncor^2 and P(X) = 1 + k1*X + k2*X^2
+  /// The equations are symetric in x <-> -x and y <-> -y we can suppose that
+  /// x_uncor and y_uncor are positive. We write (x_uncor, y_uncor) as (p*u,
+  /// q*u), with u=x+y, p=x/u and q=y/u. Hence, we need to study the variations
+  /// of the function:
+  ///    f(u) = u*(1+k1*(p^2+q^2)*u^2+k2*(p^2+q^2)^2*u^4).
+  /// We want f to be monotonic. Thus, we need to know the sign of
+  ///    f'(u) = 1 + 3*k1*(p^2+q^2)*u^2 + 5*k2*(p^2+q^2)^2*u^4.
+  /// We can study the sign of the function
+  ///    g(U) = 1 + 3*k1*(p^2+q^2)*U + 5*k2*(p^2+q^2)^2*U^2.
+  /// Let us suppose that k2 is non zero. The roots u1 and u2 can be computed
+  /// with usual methods. If u1 and u2 are complexe numbers or if u1=u2, the
+  /// sign of g is constant and f is monotonic. Else if u1 and u2 are negative,
+  /// then the four roots of f' are complexe and f is monotonic. Else, let u0 be
+  /// the smallest positive root of g, then, the area around 0 in which f is
+  /// monotonic is [-sqrt(u0), sqrt(u0)].
+  /// Let us now consider the case k2=0. If k1 is positive the roots of f' are
+  /// complexe numbers hence f is monotonic. Else, f is monotonic in [-sqrt(u0),sqrt(u0)],
+  /// with u0 = 1/sqrt(3*(-k1)*(p^2+q^2))
+  ///
+  /// XXX : Generalise the method
+  bool isPointValidForCorrection(const cv::Point3f& pos) const;
 
   /// Return the position of the object (in camera referential).
   ///

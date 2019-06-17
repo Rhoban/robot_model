@@ -227,13 +227,105 @@ cv::Point2f CameraModel::toUncorrectedImg(const cv::Point2f& imgPosCorrected) co
   {
     throw std::runtime_error(DEBUG_INFO + " invalid config" + getInvalidMsg());
   }
+
   // Convert the pixel format to something usable by
   cv::Point3f normalized((imgPosCorrected.x - centerX) / focalX, (imgPosCorrected.y - centerY) / focalY, 1.0);
+
+  if (!isPointValidForCorrection(normalized))
+  {
+    throw std::runtime_error(DEBUG_INFO + " point cannot be distorded, it is outside the valid area, which should "
+                                          "means outside the image.");
+  }
+
   std::vector<cv::Point2f> distorted;
   std::vector<cv::Point3f> undistorted = { normalized };
   cv::projectPoints(undistorted, cv::Mat::zeros(3, 1, CV_64FC1), cv::Mat::zeros(3, 1, CV_64FC1), getCameraMatrix(),
                     getDistortionCoeffs(), distorted);
   return distorted[0];
+}
+
+bool CameraModel::isPointValidForCorrection(const cv::Point3f& pos) const
+{
+  if (radialCoeffs(2) != 0 and tangentialCoeffs != Eigen::Vector2d::Zero())
+  {
+    return true;
+  }
+  // k3, p1 and p2 are equal to 0
+
+  double x = static_cast<double>(pos.x);
+  double y = static_cast<double>(pos.y);
+
+  // we can suppose that x and y are positive
+  if (x < 0)
+  {
+    x = -x;
+  }
+  if (y < 0)
+  {
+    y = -y;
+  }
+
+  // if the point is close to the center it is valid
+  if (x < 0.1 * focalX / imgWidth and y < 0.1 * focalY / imgHeight)
+  {
+    return true;
+  }
+  else
+  {
+    double k1 = radialCoeffs(0);
+    double k2 = radialCoeffs(1);
+
+    if (k1 == 0 and k2 == 0)  // there is no distortion
+    {
+      return true;
+    }
+
+    if (k2 == 0 and k1 > 0)  // f' is always positive
+    {
+      return true;
+    }
+
+    double u = x + y;
+    double p = x / u;
+    double q = y / u;
+
+    double a = 5 * k2 * std::pow(p * p + q * q, 2);
+    double b = 3 * k1 * (p * p + q * q);
+    double c = 1;
+
+    if (k2 == 0 and k1 < 0)  // the roots of f' are +- 1/sqrt(3*(-k1)*(p^2+q^2))
+    {
+      return u * u < 1 / (3 * (-k1) * (p * p + q * q));
+    }
+
+    // in the following k2 is non zero
+
+    double disc = b * b - 4 * a * c;
+
+    if (disc <= 0)  // the sign of g is constant, hence f is monotonic
+    {
+      return true;
+    }
+    else
+    {
+      double u1 = (-b - std::sqrt(disc)) / (2 * a);
+      double u2 = (-b + std::sqrt(disc)) / (2 * a);
+      // we have u1 < u2
+
+      if (u2 < 0)  // both are negative, hence the roots of f' are complexe
+      {
+        return true;
+      }
+      else if (u1 > 0)  // u1 is the smallest positivie root
+      {
+        return u * u < u1 * u1;
+      }
+      else  // u2 is the smallest positivie root
+      {
+        return u * u < u2 * u2;
+      }
+    }
+  }
 }
 
 cv::Point2f CameraModel::getImgFromObject(const cv::Point3f& objectPosition, bool outputInCorrectedImg) const
@@ -251,6 +343,7 @@ cv::Point2f CameraModel::getImgFromObject(const cv::Point3f& objectPosition, boo
   double px = ratio * objectPosition.x + centerX;
   double py = ratio * objectPosition.y + centerY;
   cv::Point2f posInCorrected(px, py);
+
   if (outputInCorrectedImg)
   {
     return posInCorrected;
@@ -282,6 +375,10 @@ cv::Point3f CameraModel::getViewVectorFromImg(const cv::Point2f& imgPos, bool in
 //{
 //  throw std::logic_error(DEBUG_INFO + "not implemented");
 //}
+
+void computePixelBounding()
+{
+}
 
 void CameraModel::fromJson(const Json::Value& v, const std::string& dir_name)
 {
