@@ -7,6 +7,10 @@
 
 #include <iostream>
 
+// XXX : debug
+#include <rhoban_utils/logging/logger.h>
+static rhoban_utils::Logger out("camera_model");
+
 Eigen::Vector2d cv2Eigen(const cv::Point2f& p)
 {
   return Eigen::Vector2d(p.x, p.y);
@@ -223,29 +227,80 @@ cv::Point2f CameraModel::toCorrectedImg(const cv::Point2f& imgPosUncorrected) co
 
 cv::Point2f CameraModel::toUncorrectedImg(const cv::Point2f& imgPosCorrected) const
 {
+  out.log("isValid");
   if (!isValid())
   {
     throw std::runtime_error(DEBUG_INFO + " invalid config" + getInvalidMsg());
   }
 
+  /// XXX : debug
+  out.log("Normalizing.");
   // Convert the pixel format to something usable by
   cv::Point3f normalized((imgPosCorrected.x - centerX) / focalX, (imgPosCorrected.y - centerY) / focalY, 1.0);
 
+  /// XXX : debug
+  out.log("isPointValidForCorrection.");
   if (!isPointValidForCorrection(normalized))
   {
     throw std::runtime_error(DEBUG_INFO + " point cannot be distorded, it is outside the valid area, which should "
                                           "means outside the image.");
   }
 
+  if (!isPointInsideTheoreticalImage(normalized))
+  {
+    throw std::runtime_error(DEBUG_INFO + " point cannot be distorded, it is outside the theoretical image.");
+  }
+
+  /// XXX : debug
+  out.log("projectPoint undistorded: %lf %lf %lf", normalized.x, normalized.y, normalized.z);
+  out.log("", normalized.x, normalized.y, normalized.z);
   std::vector<cv::Point2f> distorted;
   std::vector<cv::Point3f> undistorted = { normalized };
   cv::projectPoints(undistorted, cv::Mat::zeros(3, 1, CV_64FC1), cv::Mat::zeros(3, 1, CV_64FC1), getCameraMatrix(),
                     getDistortionCoeffs(), distorted);
   return distorted[0];
 }
+bool CameraModel::isPointInsideTheoreticalImage(const cv::Point3f& pos) const
+{
+  cv::Point3f center(centerX, centerY, 1.0);
+
+  cv::Point3f normalized_diff((0 - center.x) / focalX, (0 - center.y) / focalY, 1.0);
+  if (cv::norm(normalized_diff) > cv::norm(pos))
+  {
+    return true;
+  }
+
+  normalized_diff.x = (imgWidth - center.x) / focalX;
+  normalized_diff.y = (0 - center.y) / focalY;
+  if (cv::norm(normalized_diff) > cv::norm(pos - center))
+  {
+    return true;
+  }
+
+  normalized_diff.x = (0 - center.x) / focalX;
+  normalized_diff.y = (imgHeight - center.y) / focalY;
+  if (cv::norm(normalized_diff) > cv::norm(pos))
+  {
+    return true;
+  }
+
+  normalized_diff.x = (imgWidth - center.x) / focalX;
+  normalized_diff.y = (imgHeight - center.y) / focalY;
+  if (cv::norm(normalized_diff) > cv::norm(pos))
+  {
+    return true;
+  }
+
+  return false;
+}
 
 bool CameraModel::isPointValidForCorrection(const cv::Point3f& pos) const
 {
+  if (pos.z != 1.0)
+  {
+    throw std::runtime_error(DEBUG_INFO + " pos.z should be equal to 1.0 instead of " + std::to_string(pos.z));
+  }
+
   if (radialCoeffs(2) != 0 and tangentialCoeffs != Eigen::Vector2d::Zero())
   {
     return true;
@@ -266,7 +321,7 @@ bool CameraModel::isPointValidForCorrection(const cv::Point3f& pos) const
   }
 
   // if the point is close to the center it is valid
-  if (x < 0.1 * focalX / imgWidth and y < 0.1 * focalY / imgHeight)
+  if (x < 0.01 * focalX / imgWidth and y < 0.01 * focalY / imgHeight)
   {
     return true;
   }
@@ -295,7 +350,7 @@ bool CameraModel::isPointValidForCorrection(const cv::Point3f& pos) const
 
     if (k2 == 0 and k1 < 0)  // the roots of f' are +- 1/sqrt(3*(-k1)*(p^2+q^2))
     {
-      return u * u < 1 / (3 * (-k1) * (p * p + q * q));
+      return u * u < 1 / (-b);
     }
 
     // in the following k2 is non zero
@@ -310,7 +365,15 @@ bool CameraModel::isPointValidForCorrection(const cv::Point3f& pos) const
     {
       double u1 = (-b - std::sqrt(disc)) / (2 * a);
       double u2 = (-b + std::sqrt(disc)) / (2 * a);
-      // we have u1 < u2
+
+      if (u2 < u1)
+      {
+        double tmp = u1;
+        u1 = u2;
+        u2 = tmp;
+      }
+
+      // in the following u1 < u2
 
       if (u2 < 0)  // both are negative, hence the roots of f' are complexe
       {
@@ -318,11 +381,11 @@ bool CameraModel::isPointValidForCorrection(const cv::Point3f& pos) const
       }
       else if (u1 > 0)  // u1 is the smallest positivie root
       {
-        return u * u < u1 * u1;
+        return u * u < u1;
       }
       else  // u2 is the smallest positivie root
       {
-        return u * u < u2 * u2;
+        return u * u < u2;
       }
     }
   }
@@ -339,6 +402,7 @@ cv::Point2f CameraModel::getImgFromObject(const cv::Point3f& objectPosition, boo
     throw std::runtime_error(DEBUG_INFO + " invalid object position: z=" + std::to_string(objectPosition.z));
   }
 
+  out.log("to corrected img");
   double ratio = getFocalDist() / objectPosition.z;
   double px = ratio * objectPosition.x + centerX;
   double py = ratio * objectPosition.y + centerY;
@@ -348,6 +412,7 @@ cv::Point2f CameraModel::getImgFromObject(const cv::Point3f& objectPosition, boo
   {
     return posInCorrected;
   }
+  out.log("to UncorrectedImg");
   return toUncorrectedImg(posInCorrected);
 }
 

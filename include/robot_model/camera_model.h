@@ -133,6 +133,12 @@ public:
   /// XXX : Generalise the method
   bool isPointValidForCorrection(const cv::Point3f& pos) const;
 
+  /// For the moment, we take the farest corner with respect to the center of
+  /// the image and we compute its norm. If the distance of pos to the center is bigget,
+  /// we don't compute projectPoints. For example, we got SIGFPE got the point
+  /// 12.033001 31.280832 1.000000
+  bool isPointInsideTheoreticalImage(const cv::Point3f& pos) const;
+
   /// Return the position of the object (in camera referential).
   ///
   /// If outputInCorrectedImg is enabled, then distortion is not computed, therefore the

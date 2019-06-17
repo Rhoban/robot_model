@@ -1,0 +1,12 @@
+// Default config with:
+// center in the middle of the image
+// focalX = focalY
+// focalY = imgHeight -> vertical aperture 2 * atan(1/2) ~= 53 [deg]
+{
+    "img_width" : 800,
+    "img_height" : 600,
+    "center_x" : 400,
+    "center_y" : 300,
+    "focal_x" : 600,
+    "focal_y" : 600
+}

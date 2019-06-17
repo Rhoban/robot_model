@@ -41,3 +41,19 @@ include_directories(${catkin_INCLUDE_DIRS} ./include)
 
 add_executable(RobotModel src/main.cpp)
 target_link_libraries(RobotModel robot_model)
+
+enable_testing()
+ 
+set(TESTS
+  CameraModel
+  # HumanoidModel
+)
+
+if (CATKIN_ENABLE_TESTING)
+  # create an executable for each test
+  foreach(test ${TESTS})
+    string(REPLACE "/" "_" id ${test})
+    catkin_add_gtest(${id} automated_tests/${test}.cpp)
+    target_link_libraries(${id} robot_model)
+  endforeach(test)
+endif()
