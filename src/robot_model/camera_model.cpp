@@ -7,10 +7,6 @@
 
 #include <iostream>
 
-// XXX : debug
-#include <rhoban_utils/logging/logger.h>
-static rhoban_utils::Logger out("camera_model");
-
 Eigen::Vector2d cv2Eigen(const cv::Point2f& p)
 {
   return Eigen::Vector2d(p.x, p.y);
@@ -42,6 +38,7 @@ CameraModel::CameraModel()
   , centerY(-1)
   , radialCoeffs(Eigen::Vector3d::Zero())
   , tangentialCoeffs(Eigen::Vector2d::Zero())
+  , useIsPointInsideTheoreticalImage(true)
 {
 }
 
@@ -65,6 +62,8 @@ CameraModel::CameraModel(const cv::Mat& camera_matrix, const cv::Mat& distortion
   }
   imgWidth = img_size.width;
   imgHeight = img_size.height;
+
+  useIsPointInsideTheoreticalImage = true;
 }
 
 bool CameraModel::isValid() const
@@ -227,33 +226,27 @@ cv::Point2f CameraModel::toCorrectedImg(const cv::Point2f& imgPosUncorrected) co
 
 cv::Point2f CameraModel::toUncorrectedImg(const cv::Point2f& imgPosCorrected) const
 {
-  out.log("isValid");
   if (!isValid())
   {
     throw std::runtime_error(DEBUG_INFO + " invalid config" + getInvalidMsg());
   }
 
-  /// XXX : debug
-  out.log("Normalizing.");
   // Convert the pixel format to something usable by
   cv::Point3f normalized((imgPosCorrected.x - centerX) / focalX, (imgPosCorrected.y - centerY) / focalY, 1.0);
 
-  /// XXX : debug
-  out.log("isPointValidForCorrection.");
   if (!isPointValidForCorrection(normalized))
   {
     throw std::runtime_error(DEBUG_INFO + " point cannot be distorded, it is outside the valid area, which should "
                                           "means outside the image.");
   }
 
-  if (!isPointInsideTheoreticalImage(normalized))
+  if (useIsPointInsideTheoreticalImage and !isPointInsideTheoreticalImage(normalized))
   {
-    throw std::runtime_error(DEBUG_INFO + " point cannot be distorded, it is outside the theoretical image.");
+    throw std::runtime_error(DEBUG_INFO + " point (" + std::to_string(normalized.x) + ", " +
+                             std::to_string(normalized.y) +
+                             ") cannot be distorded, it is outside the theoretical image.");
   }
 
-  /// XXX : debug
-  out.log("projectPoint undistorded: %lf %lf %lf", normalized.x, normalized.y, normalized.z);
-  out.log("", normalized.x, normalized.y, normalized.z);
   std::vector<cv::Point2f> distorted;
   std::vector<cv::Point3f> undistorted = { normalized };
   cv::projectPoints(undistorted, cv::Mat::zeros(3, 1, CV_64FC1), cv::Mat::zeros(3, 1, CV_64FC1), getCameraMatrix(),
@@ -402,7 +395,6 @@ cv::Point2f CameraModel::getImgFromObject(const cv::Point3f& objectPosition, boo
     throw std::runtime_error(DEBUG_INFO + " invalid object position: z=" + std::to_string(objectPosition.z));
   }
 
-  out.log("to corrected img");
   double ratio = getFocalDist() / objectPosition.z;
   double px = ratio * objectPosition.x + centerX;
   double py = ratio * objectPosition.y + centerY;
@@ -412,7 +404,6 @@ cv::Point2f CameraModel::getImgFromObject(const cv::Point3f& objectPosition, boo
   {
     return posInCorrected;
   }
-  out.log("to UncorrectedImg");
   return toUncorrectedImg(posInCorrected);
 }
 

@@ -138,6 +138,7 @@ public:
   /// we don't compute projectPoints. For example, we got SIGFPE got the point
   /// 12.033001 31.280832 1.000000
   bool isPointInsideTheoreticalImage(const cv::Point3f& pos) const;
+  bool useIsPointInsideTheoreticalImage;
 
   /// Return the position of the object (in camera referential).
   ///
