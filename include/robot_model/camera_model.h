@@ -1,9 +1,13 @@
 #pragma once
 
+#include <rhoban_geometry/3d/plane.h>
+#include <rhoban_geometry/3d/ray.h>
+#include <rhoban_geometry/3d/intersection.h>
+
 #include <rhoban_utils/angle.h>
 #include <rhoban_utils/serialization/json_serializable.h>
 
-#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <opencv2/core.hpp>
 
 Eigen::Vector2d cv2Eigen(const cv::Point2f& p);
@@ -153,14 +157,24 @@ public:
   /// If inputInCorrectedImg is enabled, then the imgPos is considered as already corrected
   cv::Point3f getViewVectorFromImg(const cv::Point2f& imgPos, bool inputInCorrectedImg = false) const;
 
-  // No need to implement it from now
-  //  /// Return the object position of the point at the intersection of the vision
-  //  /// ray corresponding to imgPos and the plan defined by planEquation.
-  //  ///
-  //  /// If inputInCorrectedImg is enabled, then the distortion is not computed
-  //  cv::Point3f getObjectPosFromImgAndPlan(const cv::Point2f & imgPos,
-  //                                         cv::Point4f planEquation,
-  //                                         bool inputInCorrectedImg = false) const;
+  /// Return the ray corresponding to the given pixel (imgPos)
+  ///
+  /// dstRefFromCamera allows to convert the ray in a referential other than the camera
+  rhoban_geometry::Ray getRayFromPixel(const cv::Point2f& imgPos,
+                                       Eigen::Affine3d dstRefFromCamera = Eigen::Affine3d::Identity(),
+                                       bool inputInCorrectedImg = false);
+
+  /// Get the position in the real world of an object at the given image position
+  /// Position is obtained by performing intersection with the plane and is exported in objPos.
+  ///
+  /// Since intersection might fail if the ray corresponding to the pixel is not directed toward the plane, the function
+  /// returns true on success and false if there was no intersection found.
+  ///
+  /// dstRefFromCamera allows to specifiy the plane and to obtain the object position in another referential than the
+  /// camera referential
+  bool getPosFromPixelAndPlane(const cv::Point2f& imgPos, const rhoban_geometry::Plane& planeInDstRef,
+                               Eigen::Vector3d* objPos, Eigen::Affine3d dstRefFromCamera = Eigen::Affine3d::Identity(),
+                               bool inputInCorrectedImg = false);
 
   void fromJson(const Json::Value& json_value, const std::string& dir_name) override;
   Json::Value toJson() const override;

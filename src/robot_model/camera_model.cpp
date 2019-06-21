@@ -423,12 +423,27 @@ cv::Point3f CameraModel::getViewVectorFromImg(const cv::Point2f& imgPos, bool in
   return cv::Point3f(dX / length, dY / length, dZ / length);
 }
 
-// cv::Point3f CameraModel::getObjectPosFromImgAndPlan(const cv::Point2f & imgPos,
-//                                                    cv::Point4f planEquation,
-//                                                    bool inputInCorrectedImg) const
-//{
-//  throw std::logic_error(DEBUG_INFO + "not implemented");
-//}
+rhoban_geometry::Ray CameraModel::getRayFromPixel(const cv::Point2f& imgPos, Eigen::Affine3d dstRefFromCamera,
+                                                  bool inputInCorrectedImg)
+{
+  Eigen::Vector3d viewVectorInCamera = cv2Eigen(getViewVectorFromImg(imgPos, inputInCorrectedImg));
+  Eigen::Vector3d viewVectorInDstRef = dstRefFromCamera.linear() * viewVectorInCamera;
+  Eigen::Vector3d cameraPosInDstRef = dstRefFromCamera * Eigen::Vector3d::Zero();
+  return rhoban_geometry::Ray(cameraPosInDstRef, viewVectorInDstRef);
+}
+
+bool CameraModel::getPosFromPixelAndPlane(const cv::Point2f& imgPos, const rhoban_geometry::Plane& planeInDstRef,
+                                          Eigen::Vector3d* objPos, Eigen::Affine3d dstRefFromCamera,
+                                          bool inputInCorrectedImg)
+{
+  rhoban_geometry::Ray rayInDstRef = getRayFromPixel(imgPos, dstRefFromCamera, inputInCorrectedImg);
+  if (!isIntersectionPoint(rayInDstRef, planeInDstRef))
+  {
+    return false;
+  }
+  *objPos = getIntersection(rayInDstRef, planeInDstRef);
+  return true;
+}
 
 void computePixelBounding()
 {
