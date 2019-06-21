@@ -61,10 +61,6 @@ HumanoidModel::HumanoidModel(std::string filename) : RobotModel(filename), legIK
   hasImu = false;
   imuYaw = imuPitch = imuRoll = 0;
 
-  // Initializing IMU correction
-  useIMUCorrection = true;
-  imuCorrectedFromImu = Eigen::Matrix3d::Identity();
-
   resetWorldFrame();
 }
 
@@ -170,8 +166,7 @@ void HumanoidModel::updateImu()
     supportToWorld = newSupportToWorld;
 
     // We update worldToSupportPitchRoll, that take in account the pitch and roll from the IMU
-    imuMatrix = imuCorrectedFromImu * imuMatrix *
-                Eigen::AngleAxisd(imuPitch, Eigen::Vector3d::UnitY()).toRotationMatrix() *
+    imuMatrix = imuMatrix * Eigen::AngleAxisd(imuPitch, Eigen::Vector3d::UnitY()).toRotationMatrix() *
                 Eigen::AngleAxisd(imuRoll, Eigen::Vector3d::UnitX()).toRotationMatrix();
 
     Eigen::Affine3d newSupportToWorldPitchRoll;
@@ -193,11 +188,6 @@ void HumanoidModel::setImu(bool present, double yaw, double pitch, double roll)
   imuRoll = roll;
 
   updateImu();
-}
-
-void HumanoidModel::setImuCorrectedFromImu(Eigen::Matrix3d _imuCorrectedFromImu)
-{
-  imuCorrectedFromImu = _imuCorrectedFromImu;
 }
 
 Eigen::Affine3d HumanoidModel::flyingFootFlattenedToWorld()

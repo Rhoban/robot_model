@@ -25,7 +25,7 @@ public:
   // Compute the leg IK and update the model accordingly
   // Target is in trunk frame
   // Output will be set in the reference map
-  bool computeLegIK(std::map<std::string, double>& angles, Side side, const Eigen::Vector3d& footPos,
+  bool computeLegIK(std::map<std::string, double> &angles, Side side, const Eigen::Vector3d& footPos,
                     const Eigen::Matrix3d& footRotation = Eigen::Matrix3d::Identity());
 
   // Set support foot
@@ -36,12 +36,6 @@ public:
   // Sets the IMU matrix
   void updateImu();
   void setImu(bool present, double yaw = 0, double pitch = 0, double roll = 0);
-
-  // IMU orientation correction
-  bool useIMUCorrection;
-  //// Only the roll and pitch
-  Eigen::Matrix3d imuCorrectedFromImu;
-  void setImuCorrectedFromImu(Eigen::Matrix3d imu_corrected_from_imu);
 
   // Flying foot frame, flatenned on the ground in the
   Eigen::Affine3d flyingFootFlattenedToWorld();
