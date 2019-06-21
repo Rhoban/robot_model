@@ -38,7 +38,6 @@ CameraModel::CameraModel()
   , centerY(-1)
   , radialCoeffs(Eigen::Vector3d::Zero())
   , tangentialCoeffs(Eigen::Vector2d::Zero())
-  , useIsPointInsideTheoreticalImage(true)
 {
 }
 
@@ -62,8 +61,6 @@ CameraModel::CameraModel(const cv::Mat& camera_matrix, const cv::Mat& distortion
   }
   imgWidth = img_size.width;
   imgHeight = img_size.height;
-
-  useIsPointInsideTheoreticalImage = true;
 }
 
 bool CameraModel::isValid() const
@@ -224,7 +221,7 @@ cv::Point2f CameraModel::toCorrectedImg(const cv::Point2f& imgPosUncorrected) co
   return cv::Point2f(corrected[0].x * getFocalX() + getCenterX(), corrected[0].y * getFocalY() + getCenterY());
 }
 
-cv::Point2f CameraModel::toUncorrectedImg(const cv::Point2f& imgPosCorrected) const
+cv::Point2f CameraModel::toUncorrectedImg(const cv::Point2f& imgPosCorrected, bool checkInsideTheoreticalImage) const
 {
   if (!isValid())
   {
@@ -240,7 +237,7 @@ cv::Point2f CameraModel::toUncorrectedImg(const cv::Point2f& imgPosCorrected) co
                                           "means outside the image.");
   }
 
-  if (useIsPointInsideTheoreticalImage and !isPointInsideTheoreticalImage(normalized))
+  if (checkInsideTheoreticalImage and !isPointInsideTheoreticalImage(normalized))
   {
     throw std::runtime_error(DEBUG_INFO + " point (" + std::to_string(normalized.x) + ", " +
                              std::to_string(normalized.y) +
@@ -384,7 +381,8 @@ bool CameraModel::isPointValidForCorrection(const cv::Point3f& pos) const
   }
 }
 
-cv::Point2f CameraModel::getImgFromObject(const cv::Point3f& objectPosition, bool outputInCorrectedImg) const
+cv::Point2f CameraModel::getImgFromObject(const cv::Point3f& objectPosition, bool outputInCorrectedImg,
+                                          bool checkInsideTheoreticalImage) const
 {
   if (!isValid())
   {
@@ -404,7 +402,7 @@ cv::Point2f CameraModel::getImgFromObject(const cv::Point3f& objectPosition, boo
   {
     return posInCorrected;
   }
-  return toUncorrectedImg(posInCorrected);
+  return toUncorrectedImg(posInCorrected, checkInsideTheoreticalImage);
 }
 
 cv::Point3f CameraModel::getViewVectorFromImg(const cv::Point2f& imgPos, bool inputInCorrectedImg) const

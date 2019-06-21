@@ -102,7 +102,7 @@ public:
 
   /// From corrected image to uncorrected image
   /// See also : isPointValidForCorrection
-  cv::Point2f toUncorrectedImg(const cv::Point2f& imgPosCorrected) const;
+  cv::Point2f toUncorrectedImg(const cv::Point2f& imgPosCorrected, bool checkInsideTheoreticalImage = true) const;
 
   /// The correction of the distortion is valid only in an area around the point
   /// (0,0). Outside of this area, a point outside the image can be brought back
@@ -138,7 +138,6 @@ public:
   /// we don't compute projectPoints. For example, we got SIGFPE got the point
   /// 12.033001 31.280832 1.000000
   bool isPointInsideTheoreticalImage(const cv::Point3f& pos) const;
-  bool useIsPointInsideTheoreticalImage;
 
   /// Return the position of the object (in camera referential).
   ///
@@ -146,7 +145,8 @@ public:
   /// position return is in the correctedImage
   ///
   /// Throws a runtime_error if objectPosition.z <= 0 (behind plane)
-  cv::Point2f getImgFromObject(const cv::Point3f& objectPosition, bool outputInCorrectedImg = false) const;
+  cv::Point2f getImgFromObject(const cv::Point3f& objectPosition, bool outputInCorrectedImg = false,
+                               bool checkInsideTheoreticalImage = true) const;
 
   /// Return the normalized view vector corresponding to a point in the image.
   ///
