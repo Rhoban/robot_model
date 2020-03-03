@@ -73,7 +73,7 @@ void HumanoidServer::publishModel(rhoban::HumanoidModel& model, bool flatFoot)
   }
 
   // Adding robot Pose
-  eigenToProtobuf(model.frameToWorld("origin", flatFoot), msg.mutable_robottoworld());
+  eigenToProtobuf(model.frameToWorld("trunk", flatFoot), msg.mutable_robottoworld());
 
   // Debugging frame positions can be added to the message
   // eigenToProtobuf(frameToWorld("trunk"), msg.add_debugpositions());
