@@ -8,21 +8,21 @@ namespace rhoban
 HumanoidModel::HumanoidModel(std::string filename) : RobotModel(filename), legIK(nullptr)
 {
   // Degrees of freedom
-  dofs = { "head_yaw",        "head_pitch",           "left_shoulder_pitch", "left_shoulder_roll",
-           "left_elbow",      "right_shoulder_pitch", "right_shoulder_roll", "right_elbow",
-           "left_hip_yaw",    "left_hip_roll",        "left_hip_pitch",      "left_knee",
-           "left_ankle_roll", "left_ankle_pitch",     "right_hip_yaw",       "right_hip_roll",
-           "right_hip_pitch", "right_knee",           "right_ankle_roll",    "right_ankle_pitch" };
+  dofNames = { "head_yaw",        "head_pitch",           "left_shoulder_pitch", "left_shoulder_roll",
+               "left_elbow",      "right_shoulder_pitch", "right_shoulder_roll", "right_elbow",
+               "left_hip_yaw",    "left_hip_roll",        "left_hip_pitch",      "left_knee",
+               "left_ankle_roll", "left_ankle_pitch",     "right_hip_yaw",       "right_hip_roll",
+               "right_hip_pitch", "right_knee",           "right_ankle_roll",    "right_ankle_pitch" };
 
   // Frames
   frames = { "trunk", "left_foot", "right_foot", "camera", "head_base" };
 
   // Sorting
-  std::sort(dofs.begin(), dofs.end());
+  std::sort(dofNames.begin(), dofNames.end());
   std::sort(frames.begin(), frames.end());
 
   // Checking DOFs presence
-  for (auto& dof : dofs)
+  for (auto& dof : dofNames)
   {
     if (!hasDof(dof))
     {

@@ -15,27 +15,30 @@ public:
   virtual ~RobotModel();
 
   // Checks if a dof is present in the model
-  bool hasDof(const std::string &name);
+  bool hasDof(const std::string& name);
 
   // Return all DOF names
-  std::vector<std::string> getDofNames();
+  std::vector<std::string> getDofNames(bool include_frames = false);
+
+  // Is this name a frame DOF ?
+  bool isFrameDof(const std::string& name);
 
   // Sets the value of a dof [rad]
-  void setDof(const std::string &name, double value);
+  void setDof(const std::string& name, double value);
   void setDofs(const std::map<std::string, double> angles);
-  double getDof(const std::string &name);
+  double getDof(const std::string& name);
 
   // Reset all DOFs to 0 position
   void resetDofs();
 
   // Gets the id of a RBDL body, raise exception if not found
-  unsigned int getBodyId(const std::string &name);
-  unsigned int getJointId(const std::string &name);
+  unsigned int getBodyId(const std::string& name);
+  unsigned int getJointId(const std::string& name);
 
   // Gets the position transformation from frame "src" to frame "dest"
-  virtual Eigen::Vector3d position(const std::string &srcFrame, const std::string &dstFrame,
-                           const Eigen::Vector3d& point = Eigen::Vector3d::Zero());
-  Eigen::Vector3d jointPosition(const std::string &jointName, const std::string &frame);
+  virtual Eigen::Vector3d position(const std::string& srcFrame, const std::string& dstFrame,
+                                   const Eigen::Vector3d& point = Eigen::Vector3d::Zero());
+  Eigen::Vector3d jointPosition(const std::string& jointName, const std::string& frame);
 
   // Gets the orientation of frame src in frame dst
   virtual Eigen::Matrix3d orientation(const std::string& srcFrame, const std::string& dstFrame);

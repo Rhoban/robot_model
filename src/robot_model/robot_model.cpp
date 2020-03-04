@@ -21,9 +21,19 @@ RobotModel::RobotModel(std::string filename)
     throw std::runtime_error("RobotModel: unable to load URDF file: " + filename);
   }
 
+  int dof = 0;
   for (int k = 0; k < jointNames.size(); k++)
   {
-    dofToId[jointNames[k]] = k;
+    dofToId[jointNames[k]] = dof;
+
+    if (isFrameDof(jointNames[k]))
+    {
+      dof += 6;
+    }
+    else
+    {
+      dof += 1;
+    }
   }
 
   // Initializing dofs vectors with zeros
@@ -51,12 +61,22 @@ bool RobotModel::hasDof(const std::string& name)
   return dofToId.count(name);
 }
 
-std::vector<std::string> RobotModel::getDofNames()
+bool RobotModel::isFrameDof(const std::string& name)
+{
+  return name.length() > 6 && name.substr(name.length() - 6, 6) == "_frame";
+}
+
+std::vector<std::string> RobotModel::getDofNames(bool include_frames)
 {
   std::vector<std::string> names;
   for (auto& entry : dofToId)
   {
-    names.push_back(entry.first);
+    std::string dofName = entry.first;
+
+    if (include_frames || !isFrameDof(dofName))
+    {
+      names.push_back(dofName);
+    }
   }
 
   return names;

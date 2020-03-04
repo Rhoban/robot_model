@@ -61,7 +61,7 @@ public:
   Eigen::Affine3d supportToWorldPitchRoll;
 
   // Name of expected DOFs and frames in robot
-  std::vector<std::string> dofs;
+  std::vector<std::string> dofNames;
   std::vector<std::string> frames;
 
   // Y offset distance from trunk to leg [m]

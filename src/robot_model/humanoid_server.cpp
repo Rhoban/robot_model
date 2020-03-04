@@ -67,7 +67,7 @@ void HumanoidServer::publishModel(rhoban::HumanoidModel& model, bool flatFoot)
   HumanoidModelMsg msg;
 
   // Adding DOFs, the order is alphabetical (because dofs was orted out)
-  for (auto& dof : model.dofs)
+  for (auto& dof : model.dofNames)
   {
     msg.add_dofs(model.getDof(dof));
   }
