@@ -85,7 +85,7 @@ public:
   double distHeadPitchToCameraX;
 
   // Update the current model, reading values from histories logged
-  void readFromHistories(rhoban_utils::HistoryCollection& histories, double timestamp);
+  void readFromHistories(rhoban_utils::HistoryCollection& histories, double timestamp, bool readSupport = true);
 
 protected:
   // Leg IK

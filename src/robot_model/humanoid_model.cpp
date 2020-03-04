@@ -249,7 +249,7 @@ bool HumanoidModel::cameraLookAt(double& panDOF, double& tiltDOF, const Eigen::V
   return true;
 }
 
-void HumanoidModel::readFromHistories(rhoban_utils::HistoryCollection& histories, double timestamp)
+void HumanoidModel::readFromHistories(rhoban_utils::HistoryCollection& histories, double timestamp, bool readSupport)
 {
   // Updating DOFs from replay
   for (const std::string& name : getDofNames())
@@ -257,10 +257,21 @@ void HumanoidModel::readFromHistories(rhoban_utils::HistoryCollection& histories
     setDof(name, histories.number("read:" + name)->interpolate(timestamp));
   }
 
-  // Updating robot position
-  supportToWorld = histories.pose("support")->interpolate(timestamp);
-  supportToWorldPitchRoll = histories.pose("supportPitchRoll")->interpolate(timestamp);
-  setSupportFoot(histories.boolean("supportIsLeft")->interpolate(timestamp) ? Left : Right);
+  double imuYaw = histories.angle("imu_gyro_yaw")->interpolate(timestamp);
+  double imuPitch = histories.angle("imu_pitch")->interpolate(timestamp);
+  double imuRoll = histories.angle("imu_roll")->interpolate(timestamp);
+  setImu(true, imuYaw, imuPitch, imuRoll);
+
+  if (readSupport)
+  {
+    // Reading the support matrices and support foot flag from the history
+    // NOTE: Since supportToWorldPitchRoll is also read in that case, the update of the IMU will
+    // be erased by this read
+    // Updating robot position
+    supportToWorld = histories.pose("support")->interpolate(timestamp);
+    supportToWorldPitchRoll = histories.pose("supportPitchRoll")->interpolate(timestamp);
+    setSupportFoot(histories.boolean("supportIsLeft")->interpolate(timestamp) ? Left : Right);
+  }
 }
 
 }  // namespace rhoban
