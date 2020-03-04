@@ -34,6 +34,9 @@ set (SOURCES
   ${PROTO_HDRS} 
 )
 
+#Enable C++17
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
+
 add_library(robot_model ${SOURCES})
 target_link_libraries(robot_model ${catkin_LIBRARIES} ${PROTOBUF_LIBRARIES} ${OpenCV_LIBS})
 
