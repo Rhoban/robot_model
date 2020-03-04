@@ -249,4 +249,18 @@ bool HumanoidModel::cameraLookAt(double& panDOF, double& tiltDOF, const Eigen::V
   return true;
 }
 
+void HumanoidModel::readFromHistories(rhoban_utils::HistoryCollection& histories, double timestamp)
+{
+  // Updating DOFs from replay
+  for (const std::string& name : getDofNames())
+  {
+    setDof(name, histories.number("read:" + name)->interpolate(timestamp));
+  }
+
+  // Updating robot position
+  supportToWorld = histories.pose("support")->interpolate(timestamp);
+  supportToWorldPitchRoll = histories.pose("supportPitchRoll")->interpolate(timestamp);
+  setSupportFoot(histories.boolean("supportIsLeft")->interpolate(timestamp) ? Left : Right);
+}
+
 }  // namespace rhoban

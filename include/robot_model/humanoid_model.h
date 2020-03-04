@@ -4,6 +4,7 @@
 
 #include "robot_model/robot_model.h"
 #include "robot_model/leg_ik.h"
+#include "rhoban_utils/history/history.h"
 
 namespace rhoban
 {
@@ -25,7 +26,7 @@ public:
   // Compute the leg IK and update the model accordingly
   // Target is in trunk frame
   // Output will be set in the reference map
-  bool computeLegIK(std::map<std::string, double> &angles, Side side, const Eigen::Vector3d& footPos,
+  bool computeLegIK(std::map<std::string, double>& angles, Side side, const Eigen::Vector3d& footPos,
                     const Eigen::Matrix3d& footRotation = Eigen::Matrix3d::Identity());
 
   // Set support foot
@@ -82,6 +83,9 @@ public:
   double distHeadYawToPitchZ;
   double distHeadPitchToCameraZ;
   double distHeadPitchToCameraX;
+
+  // Update the current model, reading values from histories logged
+  void readFromHistories(rhoban_utils::HistoryCollection& histories, double timestamp);
 
 protected:
   // Leg IK
