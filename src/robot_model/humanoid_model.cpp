@@ -5,6 +5,12 @@
 
 namespace rhoban
 {
+// Makes a frame parallel to XY plane (only keep the yaw of a frame)
+static void makeParallelToFloor(Eigen::Affine3d& frame)
+{
+  frame.linear() = Eigen::AngleAxisd(frameYaw(frame.rotation()), Eigen::Vector3d::UnitZ()).toRotationMatrix();
+}
+
 HumanoidModel::HumanoidModel(std::string filename) : RobotModel(filename), legIK(nullptr)
 {
   // Degrees of freedom
@@ -62,6 +68,11 @@ HumanoidModel::HumanoidModel(std::string filename) : RobotModel(filename), legIK
   imuYaw = imuPitch = imuRoll = 0;
 
   resetWorldFrame();
+
+  // Example of code hacking one frame
+  // auto frame = model.GetJointFrame(getJointId("left_foot_frame"));
+  // frame.r.z() += 0.5;
+  // model.SetJointFrame(getJointId("left_foot_frame"), frame);
 }
 
 void HumanoidModel::resetWorldFrame()
@@ -196,8 +207,7 @@ Eigen::Affine3d HumanoidModel::flyingFootFlattenedToWorld()
   auto flyingFootToWorld = frameToWorld("flying_foot", true);
 
   // Forcing the pitch and roll of flying foot to be zero, keeping only the yaw part in rotation
-  flyingFootToWorld.linear() =
-      Eigen::AngleAxisd(frameYaw(flyingFootToWorld.rotation()), Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  makeParallelToFloor(flyingFootToWorld);
 
   // Forbidding the new frame not to be on the ground
   flyingFootToWorld.translation().z() = 0;
@@ -249,6 +259,19 @@ bool HumanoidModel::cameraLookAt(double& panDOF, double& tiltDOF, const Eigen::V
   return true;
 }
 
+void HumanoidModel::setPositionFromFrame(const std::string& frame, const Eigen::Affine3d& frameToWorld,
+                                         bool forceOnFloor)
+{
+  auto supportToFrame = transformation("support_foot", frame);
+  supportToWorldPitchRoll = frameToWorld * supportToFrame;
+  if (forceOnFloor)
+  {
+    supportToWorldPitchRoll.translation().z() = 0;
+  }
+  supportToWorld = supportToWorldPitchRoll;
+  makeParallelToFloor(supportToWorld);
+}
+
 void HumanoidModel::readFromHistories(rhoban_utils::HistoryCollection& histories, double timestamp, bool readSupport)
 {
   // Updating DOFs from replay
@@ -268,9 +291,10 @@ void HumanoidModel::readFromHistories(rhoban_utils::HistoryCollection& histories
     // NOTE: Since supportToWorldPitchRoll is also read in that case, the update of the IMU will
     // be erased by this read
     // Updating robot position
-    supportToWorld = histories.pose("support")->interpolate(timestamp);
-    supportToWorldPitchRoll = histories.pose("supportPitchRoll")->interpolate(timestamp);
     setSupportFoot(histories.boolean("supportIsLeft")->interpolate(timestamp) ? Left : Right);
+
+    // Trunk is read here in order to make the interpolation working even on the foot swap
+    setPositionFromFrame("trunk", histories.pose("trunk")->interpolate(timestamp));
   }
 }
 

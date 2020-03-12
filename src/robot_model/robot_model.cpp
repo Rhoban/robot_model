@@ -183,6 +183,18 @@ double RobotModel::orientationYaw(const std::string& srcFrame, const std::string
   return frameYaw(rotation);
 }
 
+Eigen::Vector3d RobotModel::centerOfMass(const std::string& frame)
+{
+  RigidBodyDynamics::Math::VectorNd zeros = RigidBodyDynamics::Math::VectorNd::Zero(model.dof_count);
+  RigidBodyDynamics::Math::Vector3d comRbdl;
+  double mass;
+
+  RigidBodyDynamics::Utils::CalcCenterOfMass(model, dofs, zeros, mass, comRbdl);
+  Eigen::Vector3d com(comRbdl.x(), comRbdl.y(), comRbdl.y());
+
+  return transformation("origin", frame) * com;
+}
+
 Eigen::Affine3d RobotModel::transformation(const std::string& srcFrame, const std::string& dstFrame)
 {
   Eigen::Affine3d rotation(orientation(srcFrame, dstFrame));

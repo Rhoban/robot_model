@@ -44,6 +44,9 @@ public:
   virtual Eigen::Matrix3d orientation(const std::string& srcFrame, const std::string& dstFrame);
   double orientationYaw(const std::string& srcFrame, const std::string& dstFrame);
 
+  // Gets the robot center of mass in the given frame
+  Eigen::Vector3d centerOfMass(const std::string& frame = "origin");
+
   // Gets the transformation from frame src to frame dst
   Eigen::Affine3d transformation(const std::string& srcFrame, const std::string& dstFrame);
 

@@ -84,6 +84,11 @@ public:
   double distHeadPitchToCameraZ;
   double distHeadPitchToCameraX;
 
+  // Updates the supportToWorld and supportToWorldPitchRoll to match the given trunkFrame
+  // If forceOnFloor is true, the robot will be put back on the floor (the delta z between support foot and
+  // the floor is zero'd)
+  void setPositionFromFrame(const std::string& frame, const Eigen::Affine3d& frameToWorld, bool forceOnFloor = true);
+
   // Update the current model, reading values from histories logged
   void readFromHistories(rhoban_utils::HistoryCollection& histories, double timestamp, bool readSupport = true);
 
