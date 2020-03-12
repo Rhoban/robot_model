@@ -19,6 +19,9 @@ public:
   void setFieldPose(Eigen::Affine3d fieldPose);
   Eigen::Affine3d fieldPose;
 
+  void addDebugPosition(Eigen::Vector3d debugPosition);
+  std::vector<Eigen::Vector3d> debugPositions;
+
   // ZeroMQ PUB/SUB
   zmq::context_t context;
   zmq::socket_t socket;

@@ -57,6 +57,11 @@ void HumanoidServer::setFieldPose(Eigen::Affine3d fieldPose_)
   fieldPose = fieldPose_;
 }
 
+void HumanoidServer::addDebugPosition(Eigen::Vector3d debugPosition)
+{
+  debugPositions.push_back(debugPosition);
+}
+
 void HumanoidServer::publishModel(rhoban::HumanoidModel& model, bool flatFoot)
 {
   if (!serverStarted)
@@ -76,9 +81,11 @@ void HumanoidServer::publishModel(rhoban::HumanoidModel& model, bool flatFoot)
   eigenToProtobuf(model.frameToWorld("trunk", flatFoot), msg.mutable_robottoworld());
 
   // Debugging frame positions can be added to the message
-  // eigenToProtobuf(frameToWorld("trunk"), msg.add_debugpositions());
-  // eigenToProtobuf(frameToWorld("left_foot"), msg.add_debugpositions());
-  // eigenToProtobuf(frameToWorld("right_foot"), msg.add_debugpositions());
+  for (auto debugPosition : debugPositions)
+  {
+    eigenToProtobuf(debugPosition, msg.add_debugpositions());
+  }
+  debugPositions.clear();
 
   // Ball pose
   if (hasBall)
