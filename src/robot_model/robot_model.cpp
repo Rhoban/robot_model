@@ -191,7 +191,7 @@ Eigen::Vector3d RobotModel::centerOfMass(const std::string& frame)
   double mass;
 
   RigidBodyDynamics::Utils::CalcCenterOfMass(model, dofs, zeros, mass, comRbdl);
-  Eigen::Vector3d com(comRbdl.x(), comRbdl.y(), comRbdl.y());
+  Eigen::Vector3d com(comRbdl.x(), comRbdl.y(), comRbdl.z());
 
   return transformation("origin", frame) * com;
 }
