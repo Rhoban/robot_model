@@ -28,6 +28,7 @@ RobotModel::RobotModel(std::string filename)
 
     if (isFrameDof(jointNames[k]))
     {
+      // Frames are represented as floating joints so that they can be hacked, this is 6 DOFs
       dof += 6;
     }
     else

@@ -6,7 +6,7 @@
 namespace rhoban
 {
 // Makes a frame parallel to XY plane (only keep the yaw of a frame)
-static void makeParallelToFloor(Eigen::Affine3d& frame)
+void makeParallelToFloor(Eigen::Affine3d& frame)
 {
   frame.linear() = Eigen::AngleAxisd(frameYaw(frame.rotation()), Eigen::Vector3d::UnitZ()).toRotationMatrix();
 }
@@ -19,6 +19,10 @@ HumanoidModel::HumanoidModel(std::string filename) : RobotModel(filename), legIK
                "left_hip_yaw",    "left_hip_roll",        "left_hip_pitch",      "left_knee",
                "left_ankle_roll", "left_ankle_pitch",     "right_hip_yaw",       "right_hip_roll",
                "right_hip_pitch", "right_knee",           "right_ankle_roll",    "right_ankle_pitch" };
+
+  legDofNames = { "left_hip_yaw",    "left_hip_roll",    "left_hip_pitch",   "left_knee",
+                  "left_ankle_roll", "left_ankle_pitch", "right_hip_yaw",    "right_hip_roll",
+                  "right_hip_pitch", "right_knee",       "right_ankle_roll", "right_ankle_pitch" };
 
   // Frames
   frames = { "trunk", "left_foot", "right_foot", "camera", "head_base" };
@@ -296,6 +300,110 @@ void HumanoidModel::readFromHistories(rhoban_utils::HistoryCollection& histories
     // Trunk is read here in order to make the interpolation working even on the foot swap
     setPositionFromFrame("trunk", histories.pose("trunk")->interpolate(timestamp));
   }
+}
+
+Eigen::Matrix<double, 12, 12> HumanoidModel::computeJacobian(const std::string& frame,
+                                                             const std::string& orientationFrame,
+                                                             const std::string& flyingFrame)
+{
+  Eigen::Matrix<double, 12, 12> J;
+
+  auto currentDofs = dofs;
+  currentDofs[getJointId("left_knee")] = std::max(1e-3, dofs[getJointId("left_knee")]);
+  currentDofs[getJointId("right_knee")] = std::max(1e-3, dofs[getJointId("right_knee")]);
+
+  // Computing jacobian of flying
+  RigidBodyDynamics::Math::Vector3d zeroPoint(0, 0, 0);
+  RigidBodyDynamics::Math::MatrixNd G1 = Eigen::MatrixXd::Zero(6, currentDofs.size());
+  RigidBodyDynamics::Math::MatrixNd G2 = Eigen::MatrixXd::Zero(6, currentDofs.size());
+  RigidBodyDynamics::Math::MatrixNd G3 = Eigen::MatrixXd::Zero(6, currentDofs.size());
+  RigidBodyDynamics::Math::Vector3d point = centerOfMass(frame);
+  RigidBodyDynamics::Math::Vector3d point2 = position(flyingFrame, frame);
+  RigidBodyDynamics::CalcPointJacobian6D(model, currentDofs, getBodyId(frame), point, G1, true);
+  RigidBodyDynamics::CalcPointJacobian6D(model, currentDofs, getBodyId(flyingFrame), zeroPoint, G2, true);
+  RigidBodyDynamics::CalcPointJacobian6D(model, currentDofs, getBodyId(frame), point2, G3, true);
+
+  // std::cout << orientation("origin", orientationFrame) << std::endl;
+  // std::cout << orientation("origin", frame) << std::endl;
+  // std::cout << -orientation("origin", orientationFrame) * orientation("origin", frame) << std::endl;
+
+  int index = 0;
+  for (auto dof : legDofNames)
+  {
+    double mass;
+    int jointIndex = getJointId(dof);
+    RigidBodyDynamics::Math::Vector3d comRbdl;
+    RigidBodyDynamics::Math::Vector3d comVel;
+    RigidBodyDynamics::Math::VectorNd onlyOne = RigidBodyDynamics::Math::VectorNd::Zero(model.dof_count);
+    onlyOne[jointIndex] = 1;
+
+    RigidBodyDynamics::Utils::CalcCenterOfMass(model, currentDofs, onlyOne, mass, comRbdl, &comVel);
+
+    // Rotation speed in frame
+    J.block(0, index, 3, 1) = -orientation("origin", frame) * G1.block(0, jointIndex, 3, 1);
+    // Speed of CoM
+    // J.block(3, index, 3, 1) = comVel;
+    J.block(3, index, 3, 1) =
+        orientation("origin", frame) * comVel - orientation("origin", frame) * G1.block(3, jointIndex, 3, 1);
+
+    // Rotation speed in frame
+    J.block(6, index, 3, 1) = orientation("origin", frame) * G2.block(0, jointIndex, 3, 1) -
+                              orientation("origin", frame) * G3.block(0, jointIndex, 3, 1);
+    // Speed of CoM
+    // J.block(3, index, 3, 1) = comVel;
+    J.block(9, index, 3, 1) = orientation("origin", frame) * G2.block(3, jointIndex, 3, 1) -
+                              orientation("origin", frame) * G3.block(3, jointIndex, 3, 1);
+
+    index += 1;
+  }
+
+  return J;
+}
+
+inline Eigen::Vector3d matrixToAxis(const Eigen::Matrix3d& mat)
+{
+  // Skew is the anti-symetric matrix
+  Eigen::Matrix3d skew = mat - mat.transpose();
+  // Rotation axis extraction
+  Eigen::Vector3d axis;
+  axis(0) = skew(2, 1);
+  axis(1) = skew(0, 2);
+  axis(2) = skew(1, 0);
+  // Compute rotation angle
+  if (axis.norm() > 1e-6)
+  {
+    double theta = std::asin(axis.norm() / 2.0);
+    return theta * axis.normalized();
+  }
+  else
+  {
+    return Eigen::Vector3d(0.0, 0.0, 0.0);
+  }
+}
+
+Eigen::Matrix<double, 12, 1> HumanoidModel::getError(const std::string& frame, Eigen::Affine3d com,
+                                                     const std::string& flyingFrame, Eigen::Affine3d flying,
+                                                     const std::string& orientationFrame)
+{
+  Eigen::Matrix<double, 12, 1> error;
+
+  // Orientation error
+  auto R = this->orientation(orientationFrame, frame);
+  Eigen::Affine3d orientation = transformation(frame, orientationFrame) * com;
+  error.block(0, 0, 3, 1) = R * matrixToAxis(orientation.linear());
+  error.block(3, 0, 3, 1) = com.translation() - centerOfMass(frame);
+
+  // Center of mass error
+  // Eigen::Vector3d comError = centerOfMass(frame) - com.translation();
+  // error.block(3, 0, 3, 1) = R * comError;
+
+  // Flying frame error part
+  auto R2 = this->orientation(flyingFrame, frame);
+  Eigen::Affine3d flyingError = transformation(frame, flyingFrame) * flying;
+  error.block(6, 0, 3, 1) = R2 * matrixToAxis(flyingError.linear());
+  error.block(9, 0, 3, 1) = R2 * flyingError.translation();
+
+  return error;
 }
 
 }  // namespace rhoban

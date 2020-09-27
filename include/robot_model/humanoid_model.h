@@ -8,6 +8,8 @@
 
 namespace rhoban
 {
+void makeParallelToFloor(Eigen::Affine3d& frame);
+
 class HumanoidModel : public RobotModel
 {
 public:
@@ -62,6 +64,7 @@ public:
 
   // Name of expected DOFs and frames in robot
   std::vector<std::string> dofNames;
+  std::vector<std::string> legDofNames;
   std::vector<std::string> frames;
 
   // Y offset distance from trunk to leg [m]
@@ -91,6 +94,23 @@ public:
 
   // Update the current model, reading values from histories logged
   void readFromHistories(rhoban_utils::HistoryCollection& histories, double timestamp, bool readSupport = true);
+
+  // Computes the 12x12 Jacobian matrix, in which all the following DOFs will be diff'd with
+  // respect to the following:
+  // - Position of CoM
+  // - Orientation of frame
+  // - Position of flyingFrame
+  // - Orientation of flyingFrame
+  // Everything is expressed in RBDL origin frame
+  // Typically, this can be used to control the robot CoM, the trunk orientation, along with the flying foot
+  // position and orientation
+  Eigen::Matrix<double, 12, 12> computeJacobian(const std::string& frame, const std::string& orientationFrame,
+                                                const std::string& flyingFrame);
+
+  // Computes the error to reach the given com frame (position of the com frame and orientation of the trunk)
+  // and flyingFrame
+  Eigen::Matrix<double, 12, 1> getError(const std::string& frame, Eigen::Affine3d com, const std::string& flyingFrame,
+                                        Eigen::Affine3d flying, const std::string& orientationFrame = "trunk");
 
 protected:
   // Leg IK
