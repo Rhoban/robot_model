@@ -5,8 +5,7 @@ find_package(catkin REQUIRED COMPONENTS
   rbdl_urdfreader ZeroMQ rhoban_geometry
 )
 
-set(OpenCV_DIR "/usr/local/include/")
-find_package(OpenCV 3.2.0 REQUIRED)
+find_package(OpenCV 4.2.0 REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include
