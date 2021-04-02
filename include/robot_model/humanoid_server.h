@@ -10,7 +10,8 @@ class HumanoidServer
 public:
   HumanoidServer();
   void start();
-  void publishModel(rhoban::HumanoidModel& model, bool flatFoot = true);
+  void publishModel(rhoban::HumanoidModel& model, bool flatFoot = true,
+                    Eigen::Affine3d correction = Eigen::Affine3d::Identity());
 
   void setBallPosition(Eigen::Vector3d ballPosition);
   Eigen::Vector3d ballPosition;
