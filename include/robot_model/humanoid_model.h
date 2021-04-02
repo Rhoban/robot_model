@@ -8,6 +8,8 @@
 
 namespace rhoban
 {
+void makeParallelToFloor(Eigen::Affine3d& frame);
+
 class HumanoidModel : public RobotModel
 {
 public:

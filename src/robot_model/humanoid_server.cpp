@@ -62,7 +62,7 @@ void HumanoidServer::addDebugPosition(Eigen::Vector3d debugPosition)
   debugPositions.push_back(debugPosition);
 }
 
-void HumanoidServer::publishModel(rhoban::HumanoidModel& model, bool flatFoot)
+void HumanoidServer::publishModel(rhoban::HumanoidModel& model, bool flatFoot, Eigen::Affine3d correction)
 {
   if (!serverStarted)
   {
@@ -78,7 +78,7 @@ void HumanoidServer::publishModel(rhoban::HumanoidModel& model, bool flatFoot)
   }
 
   // Adding robot Pose
-  eigenToProtobuf(model.frameToWorld("trunk", flatFoot), msg.mutable_robottoworld());
+  eigenToProtobuf(correction * model.frameToWorld("trunk", flatFoot), msg.mutable_robottoworld());
 
   // Debugging frame positions can be added to the message
   for (auto debugPosition : debugPositions)

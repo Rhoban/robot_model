@@ -6,7 +6,7 @@
 namespace rhoban
 {
 // Makes a frame parallel to XY plane (only keep the yaw of a frame)
-static void makeParallelToFloor(Eigen::Affine3d& frame)
+void makeParallelToFloor(Eigen::Affine3d& frame)
 {
   frame.linear() = Eigen::AngleAxisd(frameYaw(frame.rotation()), Eigen::Vector3d::UnitZ()).toRotationMatrix();
 }
