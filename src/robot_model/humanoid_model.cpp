@@ -11,7 +11,7 @@ void makeParallelToFloor(Eigen::Affine3d& frame)
   frame.linear() = Eigen::AngleAxisd(frameYaw(frame.rotation()), Eigen::Vector3d::UnitZ()).toRotationMatrix();
 }
 
-HumanoidModel::HumanoidModel(std::string filename) : RobotModel(filename), legIK(nullptr)
+HumanoidModel::HumanoidModel(std::string filename) : RobotModel(filename), legIK(nullptr), imuYawOffset(0)
 {
   // Degrees of freedom
   dofNames = { "head_yaw",        "head_pitch",           "left_shoulder_pitch", "left_shoulder_roll",
@@ -80,6 +80,7 @@ void HumanoidModel::resetWorldFrame()
   supportToWorld = Eigen::Affine3d::Identity();
   supportToWorld.translation().y() += supportFoot == Left ? distFootYOffset : -distFootYOffset;
   supportToWorldPitchRoll = supportToWorld;
+  imuYawOffset = imuYaw;
 }
 
 HumanoidModel::~HumanoidModel()
@@ -135,14 +136,14 @@ bool HumanoidModel::computeLegIK(std::map<std::string, double>& angles, Humanoid
   return true;
 }
 
-void HumanoidModel::setSupportFoot(Side side, bool updateWorldPosition)
+void HumanoidModel::setSupportFoot(Side side, bool updateWorldPosition, bool flatFoot)
 {
   if (side != supportFoot)
   {
     if (updateWorldPosition)
     {
       // Assigning new supportToWorld matrix
-      supportToWorld = flyingFootFlattenedToWorld();
+      supportToWorld = flyingFootFlattenedToWorld(flatFoot);
     }
 
     // Initializing aliases
@@ -168,7 +169,7 @@ void HumanoidModel::updateImu()
   if (hasImu)
   {
     // We update world to support, that suppose that foot is flat on ground
-    Eigen::Matrix3d imuMatrix = Eigen::AngleAxisd(imuYaw, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+    Eigen::Matrix3d imuMatrix = Eigen::AngleAxisd(imuYaw - imuYawOffset, Eigen::Vector3d::UnitZ()).toRotationMatrix();
 
     Eigen::Affine3d newSupportToWorld = Eigen::Affine3d::Identity();
     newSupportToWorld.linear() =
@@ -201,10 +202,20 @@ void HumanoidModel::setImu(bool present, double yaw, double pitch, double roll)
   updateImu();
 }
 
-Eigen::Affine3d HumanoidModel::flyingFootFlattenedToWorld()
+void HumanoidModel::setImuYawOffset(double offset)
+{
+  imuYawOffset = offset;
+}
+
+double HumanoidModel::getYaw()
+{
+  return imuYaw - imuYawOffset;
+}
+
+Eigen::Affine3d HumanoidModel::flyingFootFlattenedToWorld(bool flatFoot)
 {
   // Getting the flying foot in the world frame, supposing support foot is flat on the ground (no pitch or roll)
-  auto flyingFootToWorld = frameToWorld("flying_foot", true);
+  auto flyingFootToWorld = frameToWorld("flying_foot", flatFoot);
 
   // Forcing the pitch and roll of flying foot to be zero, keeping only the yaw part in rotation
   makeParallelToFloor(flyingFootToWorld);
