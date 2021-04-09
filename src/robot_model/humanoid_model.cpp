@@ -54,7 +54,8 @@ HumanoidModel::HumanoidModel(std::string filename) : RobotModel(filename), legIK
   distKneeToAnkle = fabs(jointPosition("left_knee", "trunk").z() - jointPosition("left_ankle_pitch", "trunk").z());
   distAnkleToGround = fabs(jointPosition("left_ankle_pitch", "left_foot").z());
   distHipToGround = (distHipToKnee + distKneeToAnkle + distAnkleToGround);
-  distHeadYawToPitchZ = jointPosition("head_pitch", "trunk").z() - jointPosition("head_yaw", "trunk").z();
+  distHeadYawToPitchZ =
+      jointPosition("head_pitch", "trunk").z() - transformation("head_base", "trunk").translation().z();
   distHeadPitchToCameraZ = jointPosition("head_pitch", "camera").y();
   distHeadPitchToCameraX = -jointPosition("head_pitch", "camera").z();
   legIK = new rhoban_leg_ik::IK(distHipToKnee, distKneeToAnkle, distAnkleToGround);
@@ -166,6 +167,7 @@ void HumanoidModel::setSupportFoot(Side side, bool updateWorldPosition, bool fla
 
 void HumanoidModel::updateImu()
 {
+  // hasImu = false;
   if (hasImu)
   {
     // We update world to support, that suppose that foot is flat on ground
