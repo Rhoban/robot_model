@@ -70,6 +70,11 @@ HumanoidModel::HumanoidModel(std::string filename) : RobotModel(filename), legIK
 
   resetWorldFrame();
 
+  if (model.GetParentBodyId(getBodyId("torso")) != 0)
+  {
+    throw std::runtime_error("Error in URDF: torso should be the root of the robot");
+  }
+
   // Example of code hacking one frame
   // auto frame = model.GetJointFrame(getJointId("left_foot_frame"));
   // frame.r.z() += 0.5;
@@ -167,7 +172,7 @@ void HumanoidModel::setSupportFoot(Side side, bool updateWorldPosition, bool fla
 
 void HumanoidModel::updateImu()
 {
-  // hasImu = false;
+  hasImu = false;
   if (hasImu)
   {
     // We update world to support, that suppose that foot is flat on ground
