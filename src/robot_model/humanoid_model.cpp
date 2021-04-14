@@ -172,7 +172,7 @@ void HumanoidModel::setSupportFoot(Side side, bool updateWorldPosition, bool fla
 
 void HumanoidModel::updateImu()
 {
-  hasImu = false;
+  // hasImu = false;
   if (hasImu)
   {
     // We update world to support, that suppose that foot is flat on ground
