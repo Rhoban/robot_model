@@ -1,23 +1,8 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.16.3)
 project(robot_model)
 
-find_package(catkin REQUIRED COMPONENTS
-  rbdl_urdfreader ZeroMQ rhoban_geometry
-)
-
 find_package(OpenCV 4.2.0 REQUIRED)
-
-catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES robot_model
-  CATKIN_DEPENDS rbdl_urdfreader ZeroMQ rhoban_geometry
-)
-
 find_package(Protobuf REQUIRED)
-include_directories(${PROTOBUF_INCLUDE_DIRS})
-include_directories(${catkin_INCLUDE_DIRS})
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${OpenCV_INCLUDE_DIRS})
 
 PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS
     proto/humanoid_model.proto
@@ -37,9 +22,14 @@ set (SOURCES
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 
 add_library(robot_model ${SOURCES})
-target_link_libraries(robot_model ${catkin_LIBRARIES} ${PROTOBUF_LIBRARIES} ${OpenCV_LIBS})
+target_link_libraries(robot_model PUBLIC rbdl_urdfreader ZeroMQ rhoban_geometry ${PROTOBUF_LIBRARIES} ${OpenCV_LIBS})
 
-include_directories(${catkin_INCLUDE_DIRS} ./include)
+target_include_directories(robot_model PUBLIC
+  ${OpenCV_INCLUDE_DIRS}
+  ${PROTOBUF_INCLUDE_DIRS}
+  ${CMAKE_CURRENT_BINARY_DIR}
+  ./include
+)
 
 add_executable(RobotModel src/main.cpp)
 target_link_libraries(RobotModel robot_model)
