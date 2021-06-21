@@ -8,6 +8,8 @@
 
 namespace rhoban
 {
+void makeParallelToFloor(Eigen::Affine3d& frame);
+
 class HumanoidModel : public RobotModel
 {
 public:
@@ -32,14 +34,16 @@ public:
   // Set support foot
   // If updateWorldPosition is true, the supportToWorld matrix is updated, resulting in
   // odometry
-  void setSupportFoot(Side side, bool updateWorldPosition = false);
+  void setSupportFoot(Side side, bool updateWorldPosition = false, bool flatFoot = true);
 
   // Sets the IMU matrix
   void updateImu();
   void setImu(bool present, double yaw = 0, double pitch = 0, double roll = 0);
+  void setImuYawOffset(double offset = 0);
+  double getYaw();
 
   // Flying foot frame, flatenned on the ground in the
-  Eigen::Affine3d flyingFootFlattenedToWorld();
+  Eigen::Affine3d flyingFootFlattenedToWorld(bool flatFoot = true);
 
   // Getting given frame to world
   Eigen::Affine3d frameToWorld(const std::string& frame, bool flatFoot = true);
@@ -99,5 +103,6 @@ protected:
   // Has IMU constraint
   bool hasImu;
   double imuYaw, imuPitch, imuRoll;
+  double imuYawOffset;
 };
 }  // namespace rhoban
