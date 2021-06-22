@@ -1,4 +1,4 @@
 deps:
   - rhobandeps/libzmq#cmake_only
-  - rhobandeps/rbdl 
-  - rhoban/geometry
+  - rhobandeps/rbdl#wks
+  - rhoban/geometry#wks
