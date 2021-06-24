@@ -40,7 +40,8 @@ void HumanoidServer::start()
   if (!serverStarted)
   {
     int water_mark = 10;
-    zmq_setsockopt(socket, ZMQ_SNDHWM, &water_mark, sizeof(int));
+
+    socket.setsockopt(ZMQ_SNDHWM, &water_mark, sizeof(int));
     socket.bind("tcp://*:7332");
     serverStarted = true;
   }
