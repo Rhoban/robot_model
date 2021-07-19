@@ -88,6 +88,11 @@ public:
   double distHeadPitchToCameraZ;
   double distHeadPitchToCameraX;
 
+  // Compute the supportToWorld position from a given frame
+  // If forceOnFloor is false returns a supportToWorldPitchRoll.
+  Eigen::Affine3d getPositionFromFrame(const std::string& frame, const Eigen::Affine3d& frameToWorld,
+                                       bool forceOnFloot = true);
+
   // Updates the supportToWorld and supportToWorldPitchRoll to match the given trunkFrame
   // If forceOnFloor is true, the robot will be put back on the floor (the delta z between support foot and
   // the floor is zero'd)
