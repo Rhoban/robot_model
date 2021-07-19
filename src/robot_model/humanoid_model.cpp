@@ -277,6 +277,25 @@ bool HumanoidModel::cameraLookAt(double& panDOF, double& tiltDOF, const Eigen::V
   return true;
 }
 
+Eigen::Affine3d HumanoidModel::getPositionFromFrame(const std::string& frame, const Eigen::Affine3d& frameToWorld,
+                                                    bool forceOnFloor)
+{
+  Eigen::Affine3d supportToWorld;
+  auto supportToFrame = transformation("support_foot", frame);
+  auto supportToWorldPitchRoll = frameToWorld * supportToFrame;
+  if (forceOnFloor)
+  {
+    supportToWorldPitchRoll.translation().z() = 0;
+    return supportToWorldPitchRoll;
+  }
+  else
+  {
+    supportToWorld = supportToWorldPitchRoll;
+    makeParallelToFloor(supportToWorld);
+    return supportToWorld;
+  }
+}
+
 void HumanoidModel::setPositionFromFrame(const std::string& frame, const Eigen::Affine3d& frameToWorld,
                                          bool forceOnFloor)
 {
@@ -286,6 +305,7 @@ void HumanoidModel::setPositionFromFrame(const std::string& frame, const Eigen::
   {
     supportToWorldPitchRoll.translation().z() = 0;
   }
+
   supportToWorld = supportToWorldPitchRoll;
   makeParallelToFloor(supportToWorld);
 }
