@@ -24,7 +24,7 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 add_library(robot_model ${SOURCES})
 target_link_libraries(robot_model PUBLIC 
   rbdl_urdfreader 
-  libzmq
+  cppzmq
   rhoban_geometry 
   ${PROTOBUF_LIBRARIES}
   ${OpenCV_LIBS}
