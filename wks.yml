@@ -1,4 +1,4 @@
 deps:
-  - rhobandeps/cppzmq#wks
+  - rhobandeps/cppzmq
   - rhobandeps/rbdl#wks
   - rhoban/geometry#wks
