@@ -58,6 +58,11 @@ void HumanoidServer::setFieldPose(Eigen::Affine3d fieldPose_)
   fieldPose = fieldPose_;
 }
 
+void HumanoidServer::addOpponentPosition(Eigen::Vector3d opponentPosition)
+{
+  opponentPositions.push_back(opponentPosition);
+}
+
 void HumanoidServer::addDebugPosition(Eigen::Vector3d debugPosition)
 {
   debugPositions.push_back(debugPosition);
@@ -87,6 +92,13 @@ void HumanoidServer::publishModel(rhoban::HumanoidModel& model, bool flatFoot, E
     eigenToProtobuf(debugPosition, msg.add_debugpositions());
   }
   debugPositions.clear();
+
+  // Opponents positions
+  for (auto opponentPosition : opponentPositions)
+  {
+    eigenToProtobuf(opponentPosition, msg.add_opponentspositions());
+  }
+  opponentPositions.clear();
 
   // Ball pose
   if (hasBall)

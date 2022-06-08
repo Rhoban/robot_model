@@ -20,6 +20,9 @@ public:
   void setFieldPose(Eigen::Affine3d fieldPose);
   Eigen::Affine3d fieldPose;
 
+  void addOpponentPosition(Eigen::Vector3d opponentPosition);
+  std::vector<Eigen::Vector3d> opponentPositions;
+
   void addDebugPosition(Eigen::Vector3d debugPosition);
   std::vector<Eigen::Vector3d> debugPositions;
 

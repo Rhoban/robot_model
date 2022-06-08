@@ -41,4 +41,7 @@ message HumanoidModelMsg
 
   // Field pose
   optional HumanoidModelPose fieldToWorld = 5;
+
+  // Opponent robots positions
+  repeated HumanoidModelPosition opponentsPositions = 6;
 }
