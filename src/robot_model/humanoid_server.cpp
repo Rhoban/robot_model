@@ -63,6 +63,11 @@ void HumanoidServer::addOpponentPosition(Eigen::Vector3d opponentPosition)
   opponentPositions.push_back(opponentPosition);
 }
 
+void HumanoidServer::addMatePose(Eigen::Affine3d matePose)
+{
+  matePoses.push_back(matePose);
+}
+
 void HumanoidServer::addDebugPosition(Eigen::Vector3d debugPosition)
 {
   debugPositions.push_back(debugPosition);
@@ -99,6 +104,13 @@ void HumanoidServer::publishModel(rhoban::HumanoidModel& model, bool flatFoot, E
     eigenToProtobuf(opponentPosition, msg.add_opponentspositions());
   }
   opponentPositions.clear();
+
+  // Mates poses
+  for (auto matePose : matePoses)
+  {
+    eigenToProtobuf(matePose, msg.add_alliesposes());
+  }
+  matePoses.clear();
 
   // Ball pose
   if (hasBall)

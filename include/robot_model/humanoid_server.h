@@ -23,6 +23,9 @@ public:
   void addOpponentPosition(Eigen::Vector3d opponentPosition);
   std::vector<Eigen::Vector3d> opponentPositions;
 
+  void addMatePose(Eigen::Affine3d matePose);
+  std::vector<Eigen::Affine3d> matePoses;
+
   void addDebugPosition(Eigen::Vector3d debugPosition);
   std::vector<Eigen::Vector3d> debugPositions;
 
