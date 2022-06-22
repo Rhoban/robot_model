@@ -2,11 +2,6 @@ cmake_minimum_required(VERSION 3.16.3)
 project(robot_model)
 
 find_package(OpenCV 4.2.0 REQUIRED)
-find_package(Protobuf REQUIRED)
-
-PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS
-    proto/humanoid_model.proto
-)
 
 set (SOURCES
   src/robot_model/robot_model.cpp
@@ -14,8 +9,6 @@ set (SOURCES
   src/robot_model/humanoid_server.cpp
   src/robot_model/camera_model.cpp
   src/robot_model/leg_ik.cpp
-  ${PROTO_SRCS}
-  ${PROTO_HDRS} 
 )
 
 #Enable C++17
@@ -26,6 +19,7 @@ target_link_libraries(robot_model PUBLIC
   rbdl_urdfreader 
   cppzmq
   rhoban_geometry 
+  sigmaban_model
   ${PROTOBUF_LIBRARIES}
   ${OpenCV_LIBS}
 )

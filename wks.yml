@@ -2,3 +2,4 @@ deps:
   - rhobandeps/cppzmq
   - rhobandeps/rbdl
   - rhoban/geometry
+  - rhoban/sigmaban_model
