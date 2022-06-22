@@ -20,14 +20,11 @@ target_link_libraries(robot_model PUBLIC
   cppzmq
   rhoban_geometry 
   sigmaban_model
-  ${PROTOBUF_LIBRARIES}
   ${OpenCV_LIBS}
 )
 
 target_include_directories(robot_model PUBLIC
   ${OpenCV_INCLUDE_DIRS}
-  ${PROTOBUF_INCLUDE_DIRS}
-  ${CMAKE_CURRENT_BINARY_DIR}
   ./include
 )
 
