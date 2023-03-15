@@ -20,6 +20,7 @@ target_link_libraries(robot_model PUBLIC
   cppzmq
   rhoban_geometry 
   sigmaban_model
+  libplaco
   ${OpenCV_LIBS}
 )
 

@@ -5,12 +5,6 @@
 
 namespace rhoban
 {
-// Makes a frame parallel to XY plane (only keep the yaw of a frame)
-void makeParallelToFloor(Eigen::Affine3d& frame)
-{
-  frame.linear() = Eigen::AngleAxisd(frameYaw(frame.rotation()), Eigen::Vector3d::UnitZ()).toRotationMatrix();
-}
-
 HumanoidModel::HumanoidModel(std::string filename) : RobotModel(filename), legIK(nullptr), imuYawOffset(0)
 {
   // Degrees of freedom
@@ -95,6 +89,12 @@ HumanoidModel::~HumanoidModel()
   {
     delete legIK;
   }
+}
+
+// Makes a frame parallel to XY plane (only keep the yaw of a frame)
+void makeParallelToFloor(Eigen::Affine3d& frame)
+{
+  frame.linear() = Eigen::AngleAxisd(frameYaw(frame.rotation()), Eigen::Vector3d::UnitZ()).toRotationMatrix();
 }
 
 bool HumanoidModel::computeLegIK(std::map<std::string, double>& angles, HumanoidModel::Side side,

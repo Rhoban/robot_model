@@ -1,6 +1,6 @@
 #pragma once
 
-#include "robot_model/humanoid_model.h"
+#include "placo/model/humanoid_robot.h"
 #include <zmq.hpp>
 
 namespace rhoban
@@ -10,8 +10,7 @@ class HumanoidServer
 public:
   HumanoidServer();
   void start();
-  void publishModel(rhoban::HumanoidModel& model, bool flatFoot = true,
-                    Eigen::Affine3d correction = Eigen::Affine3d::Identity());
+  void publishModel(placo::HumanoidRobot& robot, Eigen::Affine3d correction = Eigen::Affine3d::Identity());
 
   void setBallPosition(Eigen::Vector3d ballPosition);
   Eigen::Vector3d ballPosition;

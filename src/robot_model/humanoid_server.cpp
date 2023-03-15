@@ -73,7 +73,7 @@ void HumanoidServer::addDebugPosition(Eigen::Vector3d debugPosition)
   debugPositions.push_back(debugPosition);
 }
 
-void HumanoidServer::publishModel(rhoban::HumanoidModel& model, bool flatFoot, Eigen::Affine3d correction)
+void HumanoidServer::publishModel(placo::HumanoidRobot& robot, Eigen::Affine3d correction)
 {
   if (!serverStarted)
   {
@@ -82,14 +82,17 @@ void HumanoidServer::publishModel(rhoban::HumanoidModel& model, bool flatFoot, E
 
   HumanoidModelMsg msg;
 
-  // Adding DOFs, the order is alphabetical (because dofs was orted out)
-  for (auto& dof : model.dofNames)
+  // Adding DOFs sorted (important for the simulation)
+  std::vector<std::string> joints = robot.actuated_joint_names();
+  std::sort(joints.begin(), joints.end());
+  for (auto& dof : joints)
   {
-    msg.add_dofs(model.getDof(dof));
+    msg.add_dofs(robot.get_joint(dof));
   }
 
   // Adding robot Pose
-  eigenToProtobuf(correction * model.frameToWorld("trunk", flatFoot), msg.mutable_robottoworld());
+  robot.ensure_on_floor();
+  eigenToProtobuf(correction * robot.get_T_world_trunk(), msg.mutable_robottoworld());
 
   // Debugging frame positions can be added to the message
   for (auto debugPosition : debugPositions)
