@@ -6,7 +6,7 @@ find_package(OpenCV 4.2.0 REQUIRED)
 set (SOURCES
   src/robot_model/robot_model.cpp
   src/robot_model/humanoid_model.cpp
-  src/robot_model/humanoid_server.cpp
+  # src/robot_model/humanoid_server.cpp
   src/robot_model/camera_model.cpp
   src/robot_model/leg_ik.cpp
 )
@@ -19,7 +19,7 @@ target_link_libraries(robot_model PUBLIC
   rbdl_urdfreader 
   cppzmq
   rhoban_geometry 
-  sigmaban_model
+  # sigmaban_model
   libplaco
   ${OpenCV_LIBS}
 )
@@ -29,8 +29,8 @@ target_include_directories(robot_model PUBLIC
   ./include
 )
 
-add_executable(RobotModel src/main.cpp)
-target_link_libraries(RobotModel robot_model)
+# add_executable(RobotModel src/main.cpp)
+# target_link_libraries(RobotModel robot_model)
 
 enable_testing()
  
