@@ -11,7 +11,8 @@ void makeParallelToFloor(Eigen::Affine3d& frame)
   frame.linear() = Eigen::AngleAxisd(frameYaw(frame.rotation()), Eigen::Vector3d::UnitZ()).toRotationMatrix();
 }
 
-HumanoidModel::HumanoidModel(std::string filename) : RobotModel(filename), legIK(nullptr), imuYawOffset(0)
+HumanoidModel::HumanoidModel(std::string filename)
+  : RobotModel(filename), legIK(nullptr), imuYawOffset(0), hasImu(false), supportFoot(Side::Left)
 {
   // Degrees of freedom
   dofNames = { "head_yaw",        "head_pitch",           "left_shoulder_pitch", "left_shoulder_roll",
