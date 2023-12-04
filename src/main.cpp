@@ -1,12 +1,12 @@
 #include <unistd.h>
 #include <iostream>
-#include "placo/model/humanoid_robot.h"
+#include "placo/humanoid/humanoid_robot.h"
 #include "robot_model/humanoid_server.h"
 #include "rhoban_utils/timing/benchmark.h"
 
 int main()
 {
-  placo::HumanoidRobot robot;
+  placo::humanoid::HumanoidRobot robot;
   rhoban::HumanoidServer server;
   rhoban_utils::Benchmark b(NULL, "robot_model");
 
